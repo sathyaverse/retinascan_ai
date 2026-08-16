@@ -1468,14 +1468,9 @@ def create_app():
     def not_found(e):
         return render_template('404.html'), 404
 
-    return app
-
-
-app = create_app()
-
-if __name__ == '__main__':
     with app.app_context():
         # Dynamically add cataract and family_member columns to SQLite database if they do not exist
+
         try:
             import sqlite3
             db_file = os.path.join(os.path.dirname(__file__), 'retinascan.db')
@@ -1638,7 +1633,9 @@ if __name__ == '__main__':
                 db.session.add_all([d10, d11, d12, d13, d14, d15])
                 db.session.commit()
                 print('[Setup] Seeded Madurai, Trichy, Salem hospitals successfully.')
+        except Exception as e:
             print(f"[Setup Warning] Error seeding district hospitals: {e}")
+
 
     return app
 
