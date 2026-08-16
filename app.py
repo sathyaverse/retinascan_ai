@@ -1,13 +1,8 @@
 import os
 import json
 import uuid
-import subprocess
-try:
-    with open(r"c:\Users\sathy\OneDrive\Desktop\retinascan_ai\git_diff.txt", "w") as f:
-        subprocess.run(["git", "diff"], stdout=f, stderr=f, text=True)
-except Exception as e:
-    with open(r"c:\Users\sathy\OneDrive\Desktop\retinascan_ai\git_diff.txt", "w") as f:
-        f.write(f"Error: {e}")
+# Top-level imports
+
 from datetime import datetime, date
 from flask import (Flask, render_template, request, redirect, url_for,
                    flash, jsonify, send_file, abort, session)
@@ -1643,8 +1638,13 @@ if __name__ == '__main__':
                 db.session.add_all([d10, d11, d12, d13, d14, d15])
                 db.session.commit()
                 print('[Setup] Seeded Madurai, Trichy, Salem hospitals successfully.')
-        except Exception as e:
             print(f"[Setup Warning] Error seeding district hospitals: {e}")
 
-            
+    return app
+
+
+app = create_app()
+
+if __name__ == '__main__':
     app.run(debug=True)
+
