@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-gauge-high" style="color:var(--neon-cyan);"></i> Admin Dashboard</h1>
+  <span class="badge badge-admin"><i class="fa-solid fa-user-shield"></i> Medical Administrator</span>
+</div>
+
+    <div class="stats-grid">
+      <div class="stat-card stat-blue">
+        <div class="stat-value counter-val" data-target="{{ total_users }}">0</div>
+        <div class="stat-label">Total Patients</div>
+      </div>
+      <div class="stat-card stat-green">
+        <div class="stat-value counter-val" data-target="{{ total_scans }}">0</div>
+        <div class="stat-label">Total Scans</div>
+      </div>
+      <div class="stat-card stat-orange">
+        <div class="stat-value counter-val" data-target="{{ pending }}">0</div>
+        <div class="stat-label">Pending Reviews</div>
+      </div>
+      <div class="stat-card stat-blue" onclick="window.location.href='/admin/analytics';" style="cursor:pointer; border-color:var(--neon-green);">
+        <div class="stat-value"><i class="fa-solid fa-earth-asia" style="color:var(--neon-green);"></i></div>
+        <div class="stat-label" style="color:var(--neon-green); font-weight:700;">GIS Prevalence Maps</div>
+      </div>
+    </div>
+    
+    <div class="dashboard-grid">
+      
+      <!-- System Staging Chart -->
+      <div class="card">
+        <h3><i class="fa-solid fa-chart-simple" style="color:var(--neon-cyan);"></i> DR Staging Distribution</h3>
+        <div style="position: relative; height: 230px; width: 100%;">
+          <canvas id="adminChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Model Version Control and settings -->
+      <div class="card">
+        <h3><i class="fa-solid fa-microchip" style="color:var(--neon-pink);"></i> Model Control & Telemetry</h3>
+        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;">Select active neural networks, threshold values, and trigger simulation levels.</p>
+        
+        <form action="/admin/update-settings" method="POST">
+          <div class="form-group">
+            <label>Active Primary Classifier CNN Model</label>
+            <select name="primary_model" style="background:#0a0f24; border:1px solid var(--border-glass); color:white; padding:0.5rem; border-radius:8px; width:100%;">
+              <option value="effnet_v2" selected>EfficientNetV2-B0 Retina (v2.4.1 - Active)</option>
+              <option value="resnet_50">ResNet50-V2 Retina (v1.8.3 - Inactive)</option>
+              <option value="vit_b16">ViT-B16 Transformer Retina (v0.5.2 - Beta)</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Secondary Option Classifier CNN Model</label>
+            <select name="secondary_model" style="background:#0a0f24; border:1px solid var(--border-glass); color:white; padding:0.5rem; border-radius:8px; width:100%;">
+              <option value="resnet_50_sec" selected>ResNet50-V2 Retina (v1.2.0 - Active)</option>
+              <option value="mobilenet_v3">MobileNetV3 Retina (v1.0.0 - Inactive)</option>
+            </select>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Min Clarity Threshold (var)</label>
+              <input type="number" step="1" name="blur_threshold" value="15" style="background:#0a0f24; border:1px solid var(--border-glass); color:white; padding:0.5rem; border-radius:8px; width:100%;"/>
+            </div>
+            <div class="form-group">
+              <label>Min Resolution (px)</label>
+              <input type="number" step="50" name="res_threshold" value="500" style="background:#0a0f24; border:1px solid var(--border-glass); color:white; padding:0.5rem; border-radius:8px; width:100%;"/>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-outline btn-sm" style="border-color:var(--neon-pink); color:var(--neon-pink);"><i class="fa-solid fa-floppy-disk"></i> Apply Model Version Settings</button>
+        </form>
+      </div>
+
+      <!-- Recent Screenings logs -->
+      <div class="card" style="grid-column: span 2;">
+        <h3><i class="fa-solid fa-magnifying-glass-chart" style="color:var(--neon-purple);"></i> Recent Screening Logs</h3>
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr><th>ID</th><th>Patient</th><th>Eye</th><th>Primary Prediction</th><th>Second Opinion</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {% for scan in recent_scans %}
+              <tr>
+                <td>#{{ scan.id }}</td>
+                <td><strong>{{ scan.patient.name }}</strong></td>
+                <td><span class="badge badge-pending">{{ scan.eye_side }}</span></td>
+                <td>
+                  <span class="badge {% if scan.is_dr %}badge-severe-dr{% else %}badge-no-dr{% endif %}">
+                    {{ scan.predicted_class or 'N/A' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge badge-pending">
+                    {{ scan.second_opinion_class or 'N/A' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-pill status-{{ scan.status }}">{{ scan.status }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem;">
+          <a href="{{ url_for('admin_scans') }}" class="link"><i class="fa-solid fa-arrow-right"></i> View all scans database</a>
+          <a href="/admin/analytics" class="btn btn-primary btn-sm"><i class="fa-solid fa-square-poll-vertical"></i> View Analytics Platform</a>
+        </div>
+      </div>
+
+      <!-- Audit Logs Console (HIPAA Compliance) -->
+      <div class="card" style="grid-column: span 2; border-top: 3px solid var(--neon-cyan);">
+        <h3><i class="fa-solid fa-shield-halved" style="color:var(--neon-cyan);"></i> HIPAA Security & Audit Compliance Logs</h3>
+        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem;">Visualizing user authorization, diagnostic review access, and digital sign-offs events.</p>
+        
+        <div class="table-container">
+          {% if audit_logs %}
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Operator</th>
+                <th>Action</th>
+                <th>IP Address</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in audit_logs %}
+              <tr>
+                <td style="font-family:monospace; font-size:0.8rem;">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td><strong>{{ log.user.name if log.user else 'Anonymous' }}</strong></td>
+                <td><span class="badge badge-admin">{{ log.action }}</span></td>
+                <td style="font-family:monospace; font-size:0.8rem;">{{ log.ip_address or '127.0.0.1' }}</td>
+                <td style="color:var(--text-secondary); font-size:0.82rem;">{{ log.details }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div style="text-align:center; color:var(--text-secondary); padding:1rem;">
+            No audit logs captured.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+    
+    {% endblock %}
+    {% block extra_scripts %}
+    <script>
+    const chartData = {{ chart_data | safe }};
+    const labels = Object.keys(chartData);
+    const values = Object.values(chartData);
+    const colors = ['#00ff66', '#ffd600', '#ff7a00', '#ff007a', '#bd00ff'];
+    const ctx = document.getElementById('adminChart');
+    
+    if (labels.length > 0) {
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Patient Cases',
+            data: values,
+            backgroundColor: colors,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.1)'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#9ca3af', font: { family: 'Space Grotesk' } }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#9ca3af', font: { family: 'Space Grotesk' }, stepSize: 1 }
+            }
+          }
+        }
+      });
+    }
+    </script>
+    {% endblock %}

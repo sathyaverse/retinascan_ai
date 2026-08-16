@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}Upload Scan — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Upload Retinal Examination</h1>
+  <p>Submit fundus imaging for real-time deep learning analytics</p>
+</div>
+
+<div class="upload-container" style="max-width:850px;">
+  <!-- Tab Switches -->
+  <div style="display:flex; gap:1rem; border-bottom:1px solid var(--border-glass); padding-bottom:1rem; margin-bottom:2rem;">
+    <button onclick="toggleUploadMode('single')" id="btnTabSingle" class="btn btn-outline" style="border-bottom: 3px solid var(--neon-cyan); background:rgba(0,240,255,0.03); flex:1;"><i class="fa-solid fa-file-image"></i> Single Scan Examination</button>
+    <button onclick="toggleUploadMode('batch')" id="btnTabBatch" class="btn btn-outline" style="border-bottom: 3px solid transparent; flex:1;"><i class="fa-solid fa-layer-group"></i> Batch Upload Queue (10-50 Images)</button>
+  </div>
+
+  <!-- Single Upload Mode -->
+  <div id="modeSingle" class="card">
+    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+      <!-- Holographic Dropzone Portal -->
+      <div class="upload-dropzone" id="dropzone">
+        <span class="drop-icon" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:1.1rem; color:white; font-weight:600; margin-bottom:0.25rem;">Drag & Drop Fundus Image</p>
+        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.25rem;">Supported: JPG, PNG, BMP, DICOM (.dcm) • Max size 16 MB</p>
+        <input type="file" name="retinal_image" id="fileInput" accept=".jpg,.jpeg,.png,.bmp,.dcm" required hidden/>
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('fileInput').click()"><i class="fa-solid fa-folder-open"></i> Browse Files</button>
+      </div>
+
+      <!-- Preview with Sweeping Scanning Laser -->
+      <div id="previewBox" class="preview-box" style="display:none;">
+        <div class="scanner-container">
+          <div class="scan-laser-line" id="laserLine"></div>
+          <img id="previewImg" src="" alt="Preview"/>
+          
+          <!-- Holographic Analysis Progress Overlay -->
+          <div class="scanner-feed-overlay" id="scannerOverlay">
+            <div class="scanner-spinner"></div>
+            <div class="scanner-step-text" id="scannerStepText">Initiating Retinal Scan...</div>
+            <div class="scanner-progress-bar">
+              <div class="scanner-progress-fill" id="scannerProgressFill"></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <button type="button" class="btn btn-sm btn-outline" onclick="clearPreview()" style="margin-top: 0.5rem;"><i class="fa-solid fa-trash-can"></i> Remove Image</button>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:1.5rem; display: flex; gap: 1.5rem; flex-wrap: wrap;">
+        <div class="form-group" style="flex: 1; min-width: 250px;">
+          <label for="patient_profile"><i class="fa-solid fa-user"></i> Patient Profile</label>
+          <select name="patient_profile" id="patient_profile" style="cursor:pointer; background:#0a0f24; width:100%;">
+            <option value="myself">Myself ({{ current_user.name }})</option>
+            {% for member in members %}
+              <option value="{{ member.id }}" {% if request.args.get('profile_id')|int == member.id %}selected{% endif %}>{{ member.name }} ({{ member.relation }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="flex: 1; min-width: 250px;">
+          <label for="eye_side"><i class="fa-solid fa-eye"></i> Examination Target</label>
+          <select name="eye_side" id="eye_side" style="cursor:pointer; background:#0a0f24; width:100%;">
+            <option value="Unknown">Unknown / Both</option>
+            <option value="Left">Left Eye (OS)</option>
+            <option value="Right">Right Eye (OD)</option>
+          </select>
+        </div>
+      </div>
+
+
+      <div class="upload-info">
+        <h4><i class="fa-solid fa-gears"></i> Diagnostic Protocol Sequence</h4>
+        <ol>
+          <li><strong>DICOM Parse / Validation</strong>: Extracts patient headers, clinical demographics, and verifies image clarity.</li>
+          <li><strong>CLAHE Preprocessing</strong>: Normalizes contrast levels and adjusts image dimensions (224×224 pixels).</li>
+          <li><strong>CNN Inference (dr_model.h5)</strong>: Runs classification algorithms to detect microaneurysms, hemorrhages, and lesions.</li>
+          <li><strong>Explainable Grad-CAM</strong>: Synthesizes heatmap visualization overlays pinpointing clinical diagnosis biomarkers.</li>
+        </ol>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Analyse Image
+      </button>
+    </form>
+  </div>
+
+  <!-- Batch Upload Mode -->
+  <div id="modeBatch" class="card" style="display:none;">
+    <form id="batchUploadForm">
+      <div class="upload-dropzone" id="batchDropzone" style="border-color: rgba(189,0,255,0.25);">
+        <span class="drop-icon" style="background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"><i class="fa-solid fa-folder-plus"></i></span>
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:1.1rem; color:white; font-weight:600; margin-bottom:0.25rem;">Select Multiple Retina Images</p>
+        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.25rem;">Upload 10 to 50 fundus photos simultaneously for queued batch processing.</p>
+        <input type="file" id="batchFileInput" accept=".jpg,.jpeg,.png,.bmp" multiple hidden/>
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('batchFileInput').click()"><i class="fa-solid fa-images"></i> Browse Multiple Images</button>
+      </div>
+
+      <!-- File Queue List -->
+      <div id="batchQueueContainer" style="display:none; margin-top:2rem;">
+        <h3 style="margin-bottom:1rem;"><i class="fa-solid fa-circle-notch fa-spin" id="batchSpinner" style="display:none; color:var(--neon-purple);"></i> Examination Queue (<span id="queueProcessed">0</span>/<span id="queueTotal">0</span>)</h3>
+        
+        <div class="scanner-progress-bar" style="height:10px; margin-bottom:1.5rem; background:rgba(255,255,255,0.05);">
+          <div class="scanner-progress-fill" id="batchProgressBar" style="width:0%; background:linear-gradient(90deg, var(--neon-purple), var(--neon-pink));"></div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr><th>Filename</th><th>Quality Status</th><th>AI Prediction Staging</th><th>Diagnostic Status</th></tr>
+            </thead>
+            <tbody id="batchQueueTableBody">
+              <!-- Queue rows injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:1.5rem;">
+        <div class="form-group">
+          <label><i class="fa-solid fa-eye"></i> Examination Target Side</label>
+          <select id="batch_eye_side" style="background:#0a0f24;">
+            <option value="Unknown">Unknown / Mixed</option>
+            <option value="Left">Left Eye (OS)</option>
+            <option value="Right">Right Eye (OD)</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" onclick="startBatchProcessing()" class="btn btn-primary btn-full" id="batchSubmitBtn" style="background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink)); border-color:var(--neon-pink); margin-top:1rem;">
+        <i class="fa-solid fa-gears"></i> Upload & Process Batch Queue
+      </button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}

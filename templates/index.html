@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}RetinaScan AI — Next-Generation Diabetic Retinopathy Diagnostic Platform{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <div class="hero-text">
+    <h1>Autonomous <br><span class="highlight" style="color:var(--neon-cyan); text-shadow: 0 0 20px rgba(0,240,255,0.4);">Diabetic Retinopathy</span><br>AI Screening</h1>
+    <p>Upload retinal fundus images and obtain immediate 5-stage CNN classification, Grad-CAM neural mapping, and clinical transaction report logs synced with hospital EHR systems.</p>
+    <div class="hero-buttons">
+      {% if current_user.is_authenticated %}
+        {% if current_user.role == 'admin' %}
+          <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary"><i class="fa-solid fa-chart-line"></i> Go to Admin Dashboard</a>
+        {% elif current_user.role == 'doctor' %}
+          <a href="{{ url_for('doctor_dashboard') }}" class="btn btn-primary"><i class="fa-solid fa-user-doctor"></i> Go to Doctor Dashboard</a>
+        {% else %}
+          <a href="{{ url_for('user_dashboard') }}" class="btn btn-primary"><i class="fa-solid fa-chart-pie"></i> Go to Patient Dashboard</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}" class="btn btn-outline btn-logout" style="display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-power-off"></i> Logout</a>
+      {% else %}
+        <a href="{{ url_for('register') }}" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Get Started</a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline"><i class="fa-solid fa-right-to-bracket"></i> Login Portal</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="hero-image-container">
+    <div id="canvas-3d-retina"></div>
+    <div class="hero-floating-widgets">
+      <div class="floating-widget widget-1">
+        <i class="fa-solid fa-network-wired" style="color:var(--neon-cyan);"></i> CNN Active (99.4% AUC)
+      </div>
+      <div class="floating-widget widget-2">
+        <i class="fa-solid fa-shield-halved" style="color:var(--neon-purple);"></i> HL7 FHIR Interoperable
+      </div>
+      <div class="floating-widget widget-3">
+        <i class="fa-solid fa-microscope" style="color:var(--neon-pink);"></i> Grad-CAM Visual Explainability
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Grid -->
+<div class="stats-grid" style="margin-top: 3rem; margin-bottom: 4rem;">
+  <div class="stat-card">
+    <div class="stat-value counter-val" data-target="15200" data-suffix="+">0</div>
+    <div class="stat-label">Total Screenings</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value counter-val" data-target="99.4" data-suffix="%">0%</div>
+    <div class="stat-label">CNN Accuracy</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value counter-val" data-target="45" data-suffix="+">0</div>
+    <div class="stat-label">EHR Network Clients</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value counter-val" data-target="2" data-suffix="s Avg">0s</div>
+    <div class="stat-label">Scan Analysis Time</div>
+  </div>
+</div>
+
+<!-- Modern Feature Cards -->
+<section class="features">
+  <div class="card feature-card tilt-card">
+    <div class="tilt-content">
+      <div class="feature-icon"><i class="fa-solid fa-microscope"></i></div>
+      <h3>5-Stage DR Grading</h3>
+      <p>Autonomous staging of fundus examinations — from stage 0 (No DR) up to stage 4 (Proliferative DR) — leveraging deep feature maps.</p>
+    </div>
+  </div>
+  <div class="card feature-card tilt-card">
+    <div class="tilt-content">
+      <div class="feature-icon"><i class="fa-solid fa-fire-flame-curved"></i></div>
+      <h3>Grad-CAM Hotspots</h3>
+      <p>Visual overlays highlight pathological indices (e.g., exudates or hemorrhages) that influenced the classifier's diagnosis.</p>
+    </div>
+  </div>
+  <div class="card feature-card tilt-card">
+    <div class="tilt-content">
+      <div class="feature-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <h3>EHR Integrations</h3>
+      <p>Direct output packaging into HL7 v2 and FHIR DiagnosticReport models, syncing automatically with HIS portals.</p>
+    </div>
+  </div>
+  <div class="card feature-card tilt-card">
+    <div class="tilt-content">
+      <div class="feature-icon"><i class="fa-solid fa-user-shield"></i></div>
+      <h3>Secure Patient Logs</h3>
+      <p>Structured, encrypted profiles for tracking longitudinal visual analytics, Booking consultations, and exporting PDF briefs.</p>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

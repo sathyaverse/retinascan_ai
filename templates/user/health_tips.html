@@ -1,0 +1,565 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('wellness_tips') }} — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>👁️ {{ t('wellness_tips') }}</h1>
+  <a href="{{ url_for('user_dashboard') }}" class="btn btn-outline">← {{ t('dashboard') }}</a>
+</div>
+
+<!-- Highlighted Advice based on Latest Screening -->
+<div class="card" style="background: linear-gradient(135deg, #f8fafd 0%, #e8f0fe 100%); border-left: 5px solid var(--primary); margin-bottom: 2rem;">
+  <h3 style="color: var(--primary-dark); font-size: 1.15rem; margin-bottom: 0.5rem;">🎯 Personalized Screening Insights</h3>
+  {% if highest_condition == 'dr' %}
+    <p style="margin: 0; font-size: 0.9rem;">
+      Your profile shows elevated <strong>Diabetic Retinopathy (DR)</strong> risk factors. We recommend paying close attention to blood glucose tracking, low glycemic indexing, and scheduling a dilated fundus checkup.
+    </p>
+  {% elif highest_condition == 'glaucoma' %}
+    <p style="margin: 0; font-size: 0.9rem;">
+      Your profile shows elevated <strong>Glaucoma</strong> risk factors. Focus on limiting intraocular pressure (IOP) spikes by avoiding sleeping face-down or heavy lifting, and see a specialist for a visual field examination.
+    </p>
+  {% elif highest_condition == 'amd' %}
+    <p style="margin: 0; font-size: 0.9rem;">
+      Your profile shows elevated <strong>Macular Degeneration (AMD)</strong> risk factors. Focus on lutein/zeaxanthin nutrition (eggs, spinach) and wear UV-protective lenses outdoors.
+    </p>
+  {% else %}
+    <p style="margin: 0; font-size: 0.9rem;">
+      Congratulations! Your profile indicates healthy retina trends. Continue routine comprehensive eye checkups every 1-2 years and follow general digital strain guidelines.
+    </p>
+  {% endif %}
+</div>
+
+<div class="dashboard-grid">
+  <!-- Diabetic Retinopathy Guidelines -->
+  <div class="card {% if highest_condition == 'dr' %}highlight-card{% endif %}" style="border-top: 4px solid #e74c3c;">
+    <h3 style="color: #e74c3c;">🍭 {{ t('dr') }} Guidelines</h3>
+    <div style="font-size: 0.88rem; line-height: 1.6;">
+      <p style="margin-bottom: 0.75rem;">
+        Diabetic Retinopathy occurs when high blood sugar damage microvascular vessels in the retina, causing leaking or proliferative bleeding.
+      </p>
+      <ul style="padding-left: 1.2rem; margin-bottom: 1rem;">
+        <li><strong>Glycemic Indexing:</strong> Monitor HbA1c levels regularly, maintaining a clinical target of under 7.0%.</li>
+        <li><strong>Vascular Nutrition:</strong> Eat high-fiber whole foods (barleys, lentils, berries, almonds) that prevent insulin spikes.</li>
+        <li><strong>Avoid Ocular Strain:</strong> Avoid severe weightlifting or inverted postures that might burst fragile new blood vessels (neovascularization).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Glaucoma Guidelines -->
+  <div class="card {% if highest_condition == 'glaucoma' %}highlight-card{% endif %}" style="border-top: 4px solid #1a73e8;">
+    <h3 style="color: #1a73e8;">👁️ {{ t('glaucoma') }} Guidelines</h3>
+    <div style="font-size: 0.88rem; line-height: 1.6;">
+      <p style="margin-bottom: 0.75rem;">
+        Often referred to as the 'silent thief of sight', Glaucoma gradual damages the optic nerve due to blockages in fluid drainage and high pressure.
+      </p>
+      <ul style="padding-left: 1.2rem; margin-bottom: 1rem;">
+        <li><strong>Fluid Management:</strong> Limit caffeine intake and drink water in small quantities throughout the day to prevent sudden pressure spikes.</li>
+        <li><strong>Sleep Safety:</strong> Use a raised pillow to elevate the head. Never sleep with face down or arms resting against your closed eyelids.</li>
+        <li><strong>Antioxidant Diet:</strong> Focus on dietary nitrates (spinach, kale, lettuce) which enhance nitric oxide production and visual microcirculation.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- AMD Guidelines -->
+  <div class="card {% if highest_condition == 'amd' %}highlight-card{% endif %}" style="border-top: 4px solid #e67e22;">
+    <h3 style="color: #e67e22;">🧬 {{ t('amd') }} Guidelines</h3>
+    <div style="font-size: 0.88rem; line-height: 1.6;">
+      <p style="margin-bottom: 0.75rem;">
+        Age-Related Macular Degeneration breaks down macular tissues responsible for sharp, straight-ahead reading and facial recognition.
+      </p>
+      <ul style="padding-left: 1.2rem; margin-bottom: 1rem;">
+        <li><strong>Lutein Shielding:</strong> Lutein and Zeaxanthin act as internal sunglasses. Consume them in spinach, eggs, and yellow peppers.</li>
+        <li><strong>Omega-3 Fatty Acids:</strong> Retina membranes contain high concentrations of DHA. Eat salmon, mackerel, and walnuts.</li>
+        <li><strong>UV Blocking:</strong> Wear dark polarized sunglasses labeled UV400 when outdoors to reduce oxidative light stress on the macula.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- General Digital Care -->
+  <div class="card" style="border-top: 4px solid #27ae60;">
+    <h3 style="color: #27ae60;">💻 Digital Eye Strain Prevention</h3>
+    <div style="font-size: 0.88rem; line-height: 1.6;">
+      <p style="margin-bottom: 0.75rem;">
+        With increased screen time, digital eye strain (asthenopia) leads to dry eyes, headaches, and blurred vision.
+      </p>
+      <ul style="padding-left: 1.2rem; margin-bottom: 1rem;">
+        <li><strong>20-20-20 Rule:</strong> Every 20 minutes of screen work, take a 20-second break and look at something 20 feet away.</li>
+        <li><strong>Lubrication:</strong> Blink deliberately and use preservative-free artificial tears if working in air-conditioned environments.</li>
+        <li><strong>Basking Light:</strong> Ensure your workspace is well-lit and screen brightness matches room lighting to reduce pupil glare.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Animated Patient Education Module -->
+<div class="card" style="margin-top: 2.5rem; border-top: 4px solid var(--neon-pink);">
+  <h3 style="color: white; font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem;">
+    <i class="fa-solid fa-circle-play" style="color: var(--neon-pink); filter: drop-shadow(0 0 8px rgba(255, 0, 122, 0.4));"></i>
+    Patient Education Video Library
+  </h3>
+  <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 2rem;">
+    Explore high-quality animated materials and professional health lessons explaining diabetic retinopathy stages, glaucoma, macular degeneration, and cataracts.
+  </p>
+
+  <!-- Video Filter controls -->
+  <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+    <div style="flex: 1; min-width: 280px; position: relative;">
+      <input type="text" id="video-search" placeholder="Search videos by disease, language, or title..." oninput="filterVideos()" style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; border-radius: 8px; border: 1px solid var(--border-glass); background: rgba(0, 0, 0, 0.25); color: white; outline: none; font-size: 0.88rem; transition: border-color 0.2s;">
+      <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.9rem;"></i>
+    </div>
+    
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <select id="lang-filter" onchange="filterVideos()" class="select-filter">
+        <option value="all">🌐 All Languages</option>
+        <option value="English">🇬🇧 English</option>
+        <option value="Hindi">🇮🇳 Hindi (हिंदी)</option>
+        <option value="Tamil">🇮🇳 Tamil (தமிழ்)</option>
+      </select>
+      
+      <select id="category-filter" onchange="filterVideos()" class="select-filter">
+        <option value="all">🩺 All Conditions</option>
+        <option value="Diabetic Retinopathy">Diabetic Retinopathy</option>
+        <option value="Glaucoma">Glaucoma</option>
+        <option value="Macular Degeneration">Macular Degeneration (AMD)</option>
+        <option value="Cataracts">Cataracts</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Dynamic Video Grid -->
+  <div class="video-grid" id="video-grid">
+    <!-- Videos loaded dynamically via JS -->
+  </div>
+
+  <div id="no-videos-message" style="display:none; text-align:center; padding: 3rem 0; color: var(--text-secondary);">
+    <i class="fa-regular fa-folder-open" style="font-size: 2.5rem; margin-bottom: 1rem; display:block; color: rgba(255,255,255,0.15);"></i>
+    No educational videos match your search criteria. Try a different keywords.
+  </div>
+</div>
+
+<!-- Video Lightbox Popup Modal -->
+<div id="videoModal" class="video-modal-overlay">
+  <div class="video-modal-container">
+    <button onclick="closeVideoModal()" class="video-modal-close-btn">&times;</button>
+    <div class="iframe-aspect-ratio">
+      <iframe id="modalIframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+  </div>
+</div>
+
+<style>
+.highlight-card {
+  box-shadow: 0 4px 20px rgba(26,115,232,0.15) !important;
+  border-width: 2px !important;
+  transform: translateY(-2px);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Video Grid layout */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Video Card Frosted Glass design */
+.video-card {
+  background: rgba(13, 20, 44, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-glass);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+.video-card:hover {
+  border-color: rgba(0, 240, 255, 0.25);
+  box-shadow: 0 10px 25px rgba(0, 240, 255, 0.08);
+  transform: translateY(-4px);
+}
+
+.video-thumb-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  cursor: pointer;
+  background: #000;
+  overflow: hidden;
+}
+.video-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+  opacity: 0.85;
+}
+.video-card:hover .video-thumb-img {
+  transform: scale(1.05);
+  opacity: 0.95;
+}
+
+/* Overlay elements */
+.video-thumb-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(3, 6, 20, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
+.video-card:hover .video-thumb-overlay {
+  background: rgba(3, 6, 20, 0.15);
+}
+
+.play-button-glow {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 240, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #030511;
+  font-size: 1.15rem;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.video-card:hover .play-button-glow {
+  background: var(--neon-pink);
+  box-shadow: 0 0 20px var(--neon-pink);
+  transform: scale(1.15);
+  color: white;
+}
+
+.video-duration {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+.video-info-box {
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.video-tags-row {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+.video-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  border: 1px solid transparent;
+}
+.video-badge-lang-en { background: rgba(0,240,255,0.08); color: var(--neon-cyan); border-color: rgba(0,240,255,0.15); }
+.video-badge-lang-hi { background: rgba(255,122,0,0.08); color: var(--neon-orange); border-color: rgba(255,122,0,0.15); }
+.video-badge-lang-ta { background: rgba(189,0,255,0.08); color: var(--neon-purple); border-color: rgba(189,0,255,0.15); }
+
+.video-badge-cat-dr { background: rgba(255,0,122,0.06); color: var(--neon-pink); border-color: rgba(255,0,122,0.12); }
+.video-badge-cat-glaucoma { background: rgba(0,240,255,0.06); color: var(--neon-cyan); border-color: rgba(0,240,255,0.12); }
+.video-badge-cat-amd { background: rgba(255,122,0,0.06); color: var(--neon-orange); border-color: rgba(255,122,0,0.12); }
+.video-badge-cat-cataracts { background: rgba(255,214,0,0.06); color: var(--neon-yellow); border-color: rgba(255,214,0,0.12); }
+
+.video-title-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 0.4rem 0;
+  line-height: 1.35;
+}
+.video-desc-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.select-filter {
+  padding: 0.72rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-glass);
+  background: rgba(13, 20, 44, 0.75);
+  color: white;
+  outline: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: border-color 0.2s;
+}
+.select-filter:focus, #video-search:focus {
+  border-color: var(--neon-cyan);
+}
+
+/* Lightbox Modal CSS */
+.video-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(3, 5, 18, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100000;
+  align-items: center;
+  justify-content: center;
+}
+.video-modal-container {
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  background: #000;
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);
+}
+.video-modal-close-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  font-size: 1.6rem;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s;
+}
+.video-modal-close-btn:hover {
+  color: white;
+  background: rgba(255,255,255,0.1);
+}
+.iframe-aspect-ratio {
+  width: 100%;
+  aspect-ratio: 16/9;
+}
+.iframe-aspect-ratio iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+</style>
+
+<script>
+// Videos Dataset
+const educationVideos = [
+  {
+    title: "Diabetic Retinopathy Stages Explained (Animated)",
+    description: "Animated medical breakdown of DR stages, microvascular leakage, cotton wool spots, and proliferative neovascularization.",
+    youtubeId: "t7ygyC8k_b8",
+    language: "English",
+    langBadge: "video-badge-lang-en",
+    category: "Diabetic Retinopathy",
+    catBadge: "video-badge-cat-dr",
+    duration: "4:15"
+  },
+  {
+    title: "Understanding Diabetic Retinopathy (National Eye Institute)",
+    description: "Detailed animation on how persistent high blood sugar impacts retinal capillaries and leads to progressive visual impairments.",
+    youtubeId: "3T_aJ9G11sM",
+    language: "English",
+    langBadge: "video-badge-lang-en",
+    category: "Diabetic Retinopathy",
+    catBadge: "video-badge-cat-dr",
+    duration: "2:40"
+  },
+  {
+    title: "मधुमेह जनित नेत्र रोग - Diabetic Retinopathy Hindi Animation",
+    description: "Detailed Hindi health video explaining the four stages of diabetic retinopathy, symptoms, and glucose level goals.",
+    youtubeId: "y9tLbhx2zU8",
+    language: "Hindi",
+    langBadge: "video-badge-lang-hi",
+    category: "Diabetic Retinopathy",
+    catBadge: "video-badge-cat-dr",
+    duration: "5:12"
+  },
+  {
+    title: "சர்க்கரை நோய் கண் பாதிப்பு | Diabetic Retinopathy Tamil Advice",
+    description: "Tamil explanation of diabetic retinopathy stages, macular edema leaks, and preventative laser treatment schedules.",
+    youtubeId: "N2vA6Yc_y4Y",
+    language: "Tamil",
+    langBadge: "video-badge-lang-ta",
+    category: "Diabetic Retinopathy",
+    catBadge: "video-badge-cat-dr",
+    duration: "6:05"
+  },
+  {
+    title: "Understanding Glaucoma: Slit Lamp & Ocular Pressure Animation",
+    description: "Animation on how trabecular meshwork blockages increase intraocular pressure and compress the optical nerve pathway.",
+    youtubeId: "4t65sR22l8g",
+    language: "English",
+    langBadge: "video-badge-lang-en",
+    category: "Glaucoma",
+    catBadge: "video-badge-cat-glaucoma",
+    duration: "3:30"
+  },
+  {
+    title: "Glaucoma (काला मोतिया) in Hindi - Eye Pressure Explanation",
+    description: "Comprehensive animated guide explaining fluid drainage blocks, optic nerve damage, and visual field tunnel effects.",
+    youtubeId: "W-uK1d8iW2E",
+    language: "Hindi",
+    langBadge: "video-badge-lang-hi",
+    category: "Glaucoma",
+    catBadge: "video-badge-cat-glaucoma",
+    duration: "4:45"
+  },
+  {
+    title: "கண் அழுத்த நோய் என்றால் என்ன? | What is Glaucoma in Tamil",
+    description: "Tamil medical animation summarizing silent vision loss, optic disc cups, and corrective drop remedies.",
+    youtubeId: "rF8F3N5_KjM",
+    language: "Tamil",
+    langBadge: "video-badge-lang-ta",
+    category: "Glaucoma",
+    catBadge: "video-badge-cat-glaucoma",
+    duration: "5:20"
+  },
+  {
+    title: "What is Age-Related Macular Degeneration (AMD)?",
+    description: "Animated breakdown of Drusen accumulations, geographical atrophy (dry AMD), and choroidal leaks (wet AMD).",
+    youtubeId: "yGz4-G-P6X4",
+    language: "English",
+    langBadge: "video-badge-lang-en",
+    category: "Macular Degeneration",
+    catBadge: "video-badge-cat-amd",
+    duration: "3:10"
+  },
+  {
+    title: "புரை நோய் என்றால் என்ன? | What is Cataract in Tamil",
+    description: "Tamil explanation of protein changes inside the natural lens, blurriness symptoms, and phacoemulsification surgery.",
+    youtubeId: "9oMizk9_j8g",
+    language: "Tamil",
+    langBadge: "video-badge-lang-ta",
+    category: "Cataracts",
+    catBadge: "video-badge-cat-cataracts",
+    duration: "3:50"
+  },
+  {
+    title: "Cataract Surgery and Lens Opacity Animation",
+    description: "English medical animation illustrating cataracts progression, lens fogging, and intraocular lens (IOL) implants.",
+    youtubeId: "d699B3fU4W0",
+    language: "English",
+    langBadge: "video-badge-lang-en",
+    category: "Cataracts",
+    catBadge: "video-badge-cat-cataracts",
+    duration: "4:05"
+  }
+];
+
+// Render Videos Grid
+function renderVideos(list) {
+  const container = document.getElementById('video-grid');
+  const noVideos = document.getElementById('no-videos-message');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  if (list.length === 0) {
+    noVideos.style.display = 'block';
+    return;
+  } else {
+    noVideos.style.display = 'none';
+  }
+  
+  list.forEach(v => {
+    const card = document.createElement('div');
+    card.className = 'video-card';
+    
+    // YouTube high-quality thumbnail
+    const thumbUrl = `https://img.youtube.com/vi/${v.youtubeId}/mqdefault.jpg`;
+    
+    card.innerHTML = `
+      <div class="video-thumb-container" onclick="openVideoModal('${v.youtubeId}')">
+        <img class="video-thumb-img" src="${thumbUrl}" alt="${v.title}">
+        <div class="video-thumb-overlay">
+          <div class="play-button-glow"><i class="fa-solid fa-play"></i></div>
+        </div>
+        <span class="video-duration">${v.duration}</span>
+      </div>
+      <div class="video-info-box">
+        <div class="video-tags-row">
+          <span class="video-badge ${v.langBadge}">${v.language}</span>
+          <span class="video-badge ${v.catBadge}">${v.category}</span>
+        </div>
+        <h4 class="video-title-text">${v.title}</h4>
+        <p class="video-desc-text">${v.description}</p>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// Filter and Search Videos logic
+function filterVideos() {
+  const searchVal = document.getElementById('video-search').value.toLowerCase().trim();
+  const langVal = document.getElementById('lang-filter').value;
+  const catVal = document.getElementById('category-filter').value;
+  
+  const filtered = educationVideos.filter(v => {
+    const matchesSearch = v.title.toLowerCase().includes(searchVal) || 
+                          v.description.toLowerCase().includes(searchVal) ||
+                          v.category.toLowerCase().includes(searchVal) ||
+                          v.language.toLowerCase().includes(searchVal);
+                          
+    const matchesLang = (langVal === 'all' || v.language === langVal);
+    const matchesCat = (catVal === 'all' || v.category === catVal);
+    
+    return matchesSearch && matchesLang && matchesCat;
+  });
+  
+  renderVideos(filtered);
+}
+
+// Open Lightbox Video Modal
+function openVideoModal(id) {
+  const modal = document.getElementById('videoModal');
+  const iframe = document.getElementById('modalIframe');
+  if (modal && iframe) {
+    iframe.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
+    modal.style.display = 'flex';
+  }
+}
+
+// Close Video Modal
+function closeVideoModal() {
+  const modal = document.getElementById('videoModal');
+  const iframe = document.getElementById('modalIframe');
+  if (modal && iframe) {
+    iframe.src = '';
+    modal.style.display = 'none';
+  }
+}
+
+// Initialize on Load
+document.addEventListener('DOMContentLoaded', () => {
+  renderVideos(educationVideos);
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}All Scans — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-magnifying-glass-chart" style="color:var(--neon-cyan);"></i> Retinal Examinations Logs</h1>
+  <p>{{ scans|length }} total visual analysis records registered</p>
+</div>
+
+<div class="card">
+  <h3><i class="fa-solid fa-database" style="color:var(--neon-purple);"></i> Examination Records Database</h3>
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr><th>ID</th><th>Patient</th><th>Prediction Result</th><th>Confidence</th><th>Target Eye</th><th>Scanned Date</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for scan in scans %}
+        <tr>
+          <td>#{{ scan.id }}</td>
+          <td><strong>{{ scan.patient.name }}</strong></td>
+          <td>
+            <span class="badge badge-{{ scan.predicted_class.lower().replace(' ','-') if scan.predicted_class else 'pending' }}">
+              {{ scan.predicted_class or 'N/A' }}
+            </span>
+          </td>
+          <td>
+            {% if scan.confidence %}
+              <span style="font-family:'Orbitron',sans-serif; color:var(--neon-cyan); font-weight:600;">{{ (scan.confidence * 100)|round(1) }}%</span>
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>{{ scan.eye_side }}</td>
+          <td>{{ scan.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <span class="status-pill status-{{ scan.status }}">{{ scan.status }}</span>
+          </td>
+          <td>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <a href="{{ url_for('results', scan_id=scan.id) }}" class="link" style="font-size:0.85rem;"><i class="fa-solid fa-expand"></i> View</a>
+              {% if scan.status == 'processed' %}
+                <span style="color:var(--border-glass);">|</span>
+                <button class="link" onclick="openValidate({{ scan.id }})" style="font-size:0.85rem; border:none; background:none;"><i class="fa-solid fa-stamp"></i> Validate</button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Holographic Validate Modal overlay -->
+<div id="validateModal" style="display:none; position:fixed; inset:0; background:rgba(6,9,19,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center;">
+  <div class="card" style="width:460px; max-width:90vw; border-color:var(--neon-cyan); box-shadow: 0 0 25px rgba(0, 240, 255, 0.25), var(--shadow-glass);">
+    <h3><i class="fa-solid fa-stamp" style="color:var(--neon-cyan);"></i> Validate Diagnostic Report</h3>
+    <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:1.25rem;">Enter clinical validation reports or ophthalmology observations to sync with the EHR database.</p>
+    
+    <form method="POST" id="validateForm" action="">
+      <div class="form-group">
+        <label><i class="fa-regular fa-comment-dots"></i> Clinical / Ophthalmologist Notes</label>
+        <textarea name="notes" rows="4" placeholder="Enter clinical observations, vascular stage corrections, or patient instructions..." required style="resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem;">
+        <button type="button" class="btn btn-outline" onclick="closeValidate()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check-double"></i> Confirm Validation</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function openValidate(scanId) {
+  document.getElementById('validateForm').action = '/admin/validate/' + scanId;
+  const modal = document.getElementById('validateModal');
+  modal.style.display = 'flex';
+}
+function closeValidate() {
+  document.getElementById('validateModal').style.display = 'none';
+}
+</script>
+{% endblock %}

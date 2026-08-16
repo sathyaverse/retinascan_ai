@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+{% block title %}AI Second Opinion Validation — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+  <div>
+    <h1><i class="fa-solid fa-code-compare" style="color:var(--neon-pink);"></i> AI Second Opinion Dashboard</h1>
+    <p>Multi-model diagnostic validation, classification consensus analysis, and interactive diagnostic agent</p>
+  </div>
+  <div>
+    <a href="{{ url_for('results', scan_id=scan.id) }}" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to Scan</a>
+  </div>
+</div>
+
+<!-- AI Second Opinion Mode Validation Hub -->
+<div class="card" style="margin-bottom: 2rem; padding: 2rem; border: 1px solid var(--border-glass); background: rgba(255, 255, 255, 0.02); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); overflow: hidden; position: relative;">
+  <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: {% if consensus %}var(--neon-green){% else %}var(--neon-pink){% endif %};"></div>
+  
+  <h2 style="margin-top: 0; margin-bottom: 1.5rem; font-family: 'Orbitron', sans-serif; font-size: 1.3rem; color: white; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem;">
+    <i class="fa-solid fa-square-poll-horizontal" style="color: var(--neon-pink);"></i> AI Second Opinion Mode
+  </h2>
+  
+  <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
+    
+    <!-- Retina Image Viewport -->
+    <div style="flex: 1 1 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border-glass); position: relative; overflow: hidden; min-height: 270px;">
+      <div class="laser-scanner" style="position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent); animation: laserScan 4s ease-in-out infinite;"></div>
+      <div style="width: 180px; height: 180px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border-glass); box-shadow: 0 0 25px rgba(0, 242, 254, 0.15); margin-bottom: 1rem; position: relative;">
+        {% if scan.original_image.endswith('.pdf') %}
+          <img src="{{ url_for('static', filename='uploads/pdf_placeholder.svg') }}" style="width: 100%; height: 100%; object-fit: contain; background: #03050c;" />
+        {% else %}
+          <img src="{{ url_for('static', filename='uploads/' + scan.original_image) }}" style="width: 100%; height: 100%; object-fit: cover;" />
+        {% endif %}
+      </div>
+      <span style="font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 0.4rem;">
+        <i class="fa-solid fa-eye" style="color: var(--neon-cyan);"></i> Scan Reference: #RS-{{ scan.id }} ({{ scan.eye_side }} Eye)
+      </span>
+    </div>
+
+    <!-- AI Diagnostic Summary -->
+    <div style="flex: 2 1 400px; display: flex; flex-direction: column; gap: 1.25rem;">
+      
+      <!-- Model A: Primary AI Result -->
+      <div style="display: flex; align-items: center; gap: 1.25rem; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-glass); padding: 1rem 1.25rem; border-radius: 12px; transition: transform 0.2s ease;">
+        <div style="background: rgba(0, 242, 254, 0.08); border: 1px solid var(--neon-cyan); border-radius: 8px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; color: var(--neon-cyan); font-size: 1.15rem; font-family: 'Orbitron', sans-serif; font-weight: 700;">A</div>
+        <div style="flex: 1;">
+          <span style="font-family: 'Space Grotesk', sans-serif; font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 1px; font-weight: 700; display: block; margin-bottom: 0.15rem;">Primary AI Result</span>
+          <div style="font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; color: white;">
+            Model A (EfficientNetV2-B0) &rarr; <span style="color: var(--neon-cyan);">{{ scan.predicted_class }}</span>
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 400; margin-left: 0.25rem;">({{ (scan.confidence * 100)|round(1) }}%)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model B: Secondary AI Review -->
+      <div style="display: flex; align-items: center; gap: 1.25rem; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-glass); padding: 1rem 1.25rem; border-radius: 12px; transition: transform 0.2s ease;">
+        <div style="background: rgba(255, 0, 122, 0.08); border: 1px solid var(--neon-pink); border-radius: 8px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; color: var(--neon-pink); font-size: 1.15rem; font-family: 'Orbitron', sans-serif; font-weight: 700;">B</div>
+        <div style="flex: 1;">
+          <span style="font-family: 'Space Grotesk', sans-serif; font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 1px; font-weight: 700; display: block; margin-bottom: 0.15rem;">Secondary AI Review</span>
+          <div style="font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; color: white;">
+            Model B (ResNet50V2) &rarr; <span style="color: var(--neon-pink);">{{ scan.second_opinion_class }}</span>
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 400; margin-left: 0.25rem;">({{ (scan.second_opinion_confidence * 100)|round(1) }}%)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Final Consensus Statement -->
+      <div style="display: flex; align-items: center; gap: 1.25rem; background: {% if consensus %}rgba(0, 255, 102, 0.02){% else %}rgba(255, 0, 122, 0.02){% endif %}; border: 1px solid {% if consensus %}var(--neon-green){% else %}var(--neon-pink){% endif %}; padding: 1.1rem 1.25rem; border-radius: 12px; box-shadow: 0 0 15px {% if consensus %}rgba(0, 255, 102, 0.03){% else %}rgba(255, 0, 122, 0.03){% endif %};">
+        <div style="background: {% if consensus %}rgba(0, 255, 102, 0.1){% else %}rgba(255, 0, 122, 0.1){% endif %}; border: 1px solid {% if consensus %}var(--neon-green){% else %}var(--neon-pink){% endif %}; border-radius: 8px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; color: {% if consensus %}var(--neon-green){% else %}var(--neon-pink){% endif %}; font-size: 1.3rem;">
+          <i class="fa-solid {% if consensus %}fa-square-check{% else %}fa-triangle-exclamation{% endif %}"></i>
+        </div>
+        <div style="flex: 1;">
+          <span style="font-family: 'Space Grotesk', sans-serif; font-size: 0.72rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 1px; font-weight: 700; display: block; margin-bottom: 0.15rem;">Final Consensus</span>
+          <div style="font-family: 'Orbitron', sans-serif; font-size: 1.2rem; font-weight: 800; color: white;">
+            Consensus: 
+            {% if consensus %}
+              <span style="color: var(--neon-green); text-shadow: 0 0 8px rgba(0, 255, 102, 0.3);">{{ scan.predicted_class }}</span>
+            {% else %}
+              <span style="color: var(--neon-pink); text-shadow: 0 0 8px rgba(255, 0, 122, 0.3);">No Consensus (Divergent Staging)</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes laserScan {
+  0% { top: 0%; opacity: 0.3; }
+  50% { top: 100%; opacity: 1; }
+  100% { top: 0%; opacity: 0.3; }
+}
+</style>
+
+<div class="dashboard-grid">
+  
+  <!-- Left Column: Side-by-side Model Stats -->
+  <div class="card" style="grid-column: span 2;">
+    <h3><i class="fa-solid fa-microchip" style="color:var(--neon-cyan);"></i> Classifier Comparison</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.5rem;">
+      
+      <!-- Primary Model Card -->
+      <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-glass); border-radius: 8px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <span style="font-family:'Space Grotesk',sans-serif; font-size: 0.75rem; text-transform: uppercase; color: var(--neon-cyan); letter-spacing: 1px; font-weight:700;">Primary Classifier</span>
+          <h4 style="margin: 0.25rem 0 1rem 0; font-size: 1.25rem; color: white;">EfficientNetV2-B0</h4>
+          
+          <div class="badge {% if scan.is_dr %}badge-severe-dr{% else %}badge-no-dr{% endif %}" style="font-size: 0.9rem; padding: 0.4rem 0.8rem; margin-bottom: 1rem;">
+            {{ scan.predicted_class }}
+          </div>
+
+          <div style="margin-top: 1.5rem;">
+            <h5 style="color: white; font-size: 0.85rem; margin-bottom: 0.75rem; font-weight: 600;">Staging Probability Curve</h5>
+            {% for label, val in probs1.items() %}
+            <div style="margin-bottom: 0.65rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.2rem;">
+                <span>{{ label }}</span>
+                <span>{{ val }}%</span>
+              </div>
+              <div class="confidence-bar" style="height: 6px;">
+                <div class="confidence-fill" style="width: {{ val }}%; height: 100%; background: var(--neon-cyan);"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-glass); padding-top: 1rem; margin-top: 1.5rem; text-align: center;">
+          <span style="font-family:'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 800; color: white;">
+            {{ (scan.confidence * 100)|round(1) }}%
+          </span>
+          <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; text-transform: uppercase;">Confidence Severity</span>
+        </div>
+      </div>
+
+      <!-- Secondary Model Card -->
+      <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-glass); border-radius: 8px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <span style="font-family:'Space Grotesk',sans-serif; font-size: 0.75rem; text-transform: uppercase; color: var(--neon-pink); letter-spacing: 1px; font-weight:700;">Secondary Validator</span>
+          <h4 style="margin: 0.25rem 0 1rem 0; font-size: 1.25rem; color: white;">{{ scan.second_opinion_model or 'ResNet50V2 (V1.2.0)' }}</h4>
+          
+          <div class="badge badge-pending" style="font-size: 0.9rem; padding: 0.4rem 0.8rem; border-color: var(--neon-pink); color: var(--neon-pink); background: rgba(255,0,122,0.05); margin-bottom: 1rem;">
+            {{ scan.second_opinion_class }}
+          </div>
+
+          <div style="margin-top: 1.5rem;">
+            <h5 style="color: white; font-size: 0.85rem; margin-bottom: 0.75rem; font-weight: 600;">Staging Probability Curve</h5>
+            {% for label, val in probs2.items() %}
+            <div style="margin-bottom: 0.65rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.2rem;">
+                <span>{{ label }}</span>
+                <span>{{ val }}%</span>
+              </div>
+              <div class="confidence-bar" style="height: 6px;">
+                <div class="confidence-fill" style="width: {{ val }}%; height: 100%; background: var(--neon-pink);"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-glass); padding-top: 1rem; margin-top: 1.5rem; text-align: center;">
+          <span style="font-family:'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 800; color: white;">
+            {{ (scan.second_opinion_confidence * 100)|round(1) }}%
+          </span>
+          <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; text-transform: uppercase;">Confidence Severity</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right Column: Interactive Diagnostic Agent Chat Panel -->
+  <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; height: 500px; padding: 0; overflow: hidden; border: 1px solid var(--border-glass);">
+    <!-- Chat Header -->
+    <div style="display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border-glass); padding: 1rem 1.5rem; background: rgba(255,255,255,0.01);">
+      <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green);"></div>
+      <h3 style="margin: 0; font-size: 0.95rem; font-family:'Space Grotesk',sans-serif; color: white;">Ophthalmic Assistant Agent</h3>
+    </div>
+
+    <!-- Message Logs -->
+    <div id="agentChatMessages" style="flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; scroll-behavior: smooth;">
+      <div style="align-self: flex-start; background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px 12px 12px 0px; padding: 0.75rem; max-width: 85%; font-size: 0.8rem; color: var(--text-primary); line-height: 1.5;">
+        <strong style="color: var(--neon-cyan); display: block; margin-bottom: 0.25rem;"><i class="fa-solid fa-robot"></i> Assistant:</strong>
+        Hello! I have loaded your multi-model scan analytics. You can ask me details like:
+        <ul style="margin: 0.5rem 0 0 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.25rem;">
+          <li>Why do the models match or diverge?</li>
+          <li>What is my Glaucoma or AMD risk score?</li>
+          <li>What clinical markers were identified on the scan?</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- User Input -->
+    <div style="display: flex; gap: 0.5rem; padding: 0.75rem 1rem; border-top: 1px solid var(--border-glass); background: rgba(6,9,19,0.5);">
+      <input type="text" id="agentTextInput" placeholder="Ask about comparison details..." onkeydown="if(event.key==='Enter') sendAgentMessage();" style="flex: 1; background: rgba(0,0,0,0.25); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.5rem 0.75rem; color: white; font-size: 0.82rem; height: 36px; outline: none; box-sizing: border-box;"/>
+      <button onclick="sendAgentMessage()" class="btn btn-primary" style="padding: 0.4rem 0.9rem; border-radius: 8px; height: 36px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Diagnostic image visualization modes -->
+  <div class="card" style="grid-column: span 3;">
+    <h3><i class="fa-solid fa-images" style="color:var(--neon-green);"></i> Explainability Mapping</h3>
+    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+      The original retinal fundus photography along with the primary classification attention heatmap highlight key features used for analysis.
+    </p>
+
+    <div style="display: flex; gap: 2rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+      <div style="text-align: center;">
+        <h4 style="color: white; margin-bottom: 0.5rem; font-size: 0.9rem;">Raw Fundus Photography</h4>
+        <div style="width: 250px; height: 250px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-glass); box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+          {% if scan.original_image.endswith('.pdf') %}
+            <img src="{{ url_for('static', filename='uploads/pdf_placeholder.svg') }}" style="width: 100%; height: 100%; object-fit: contain; background: #03050c;" />
+          {% else %}
+            <img src="{{ url_for('static', filename='uploads/' + scan.original_image) }}" style="width: 100%; height: 100%; object-fit: cover;" />
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="text-align: center;">
+        <h4 style="color: var(--neon-pink); margin-bottom: 0.5rem; font-size: 0.9rem;">Grad-CAM Lesion Heatmap</h4>
+        <div style="width: 250px; height: 250px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-glass); box-shadow: 0 5px 15px rgba(255,0,122,0.1);">
+          {% if scan.gradcam_image %}
+            {% if scan.gradcam_image.endswith('.svg') %}
+              <img src="{{ url_for('static', filename='uploads/' + scan.gradcam_image) }}" style="width: 100%; height: 100%; object-fit: contain; background: #03050c;" />
+            {% else %}
+              <img src="{{ url_for('static', filename='uploads/' + scan.gradcam_image) }}" style="width: 100%; height: 100%; object-fit: cover;" />
+            {% endif %}
+          {% else %}
+            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.02); color: var(--text-secondary); font-size: 0.8rem; font-style: italic;">
+              No Grad-CAM available
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function sendAgentMessage() {
+    const input = document.getElementById('agentTextInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    appendMessage('user', msg);
+    input.value = "";
+
+    // Show typing indicator
+    const typingDiv = document.createElement('div');
+    typingDiv.id = "chatTypingIndicator";
+    typingDiv.style.alignSelf = "flex-start";
+    typingDiv.style.color = "var(--text-secondary)";
+    typingDiv.style.fontSize = "0.75rem";
+    typingDiv.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Agent is writing...';
+    document.getElementById('agentChatMessages').appendChild(typingDiv);
+    document.getElementById('agentChatMessages').scrollTop = document.getElementById('agentChatMessages').scrollHeight;
+
+    // Send query to API
+    fetch('/api/chat-second-opinion/{{ scan.id }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message: msg })
+    })
+    .then(res => res.json())
+    .then(data => {
+      // Remove typing indicator
+      const tip = document.getElementById('chatTypingIndicator');
+      if (tip) tip.remove();
+      
+      if (data.success) {
+        appendMessage('ai', data.reply);
+      } else {
+        appendMessage('ai', "I encountered an issue verifying the clinical datastore. Please try again.");
+      }
+    })
+    .catch(err => {
+      const tip = document.getElementById('chatTypingIndicator');
+      if (tip) tip.remove();
+      appendMessage('ai', "Unable to establish secure telemetry connection. Check network status.");
+    });
+  }
+
+  function appendMessage(sender, text) {
+    const chat = document.getElementById('agentChatMessages');
+    const msgDiv = document.createElement('div');
+    msgDiv.style.alignSelf = sender === 'user' ? 'flex-end' : 'flex-start';
+    msgDiv.style.background = sender === 'user' ? 'rgba(0, 242, 254, 0.08)' : 'rgba(255,255,255,0.03)';
+    msgDiv.style.border = sender === 'user' ? '1px solid rgba(0, 242, 254, 0.25)' : '1px solid var(--border-glass)';
+    msgDiv.style.borderRadius = sender === 'user' ? '12px 12px 0px 12px' : '12px 12px 12px 0px';
+    msgDiv.style.padding = '0.75rem';
+    msgDiv.style.maxWidth = '85%';
+    msgDiv.style.fontSize = '0.82rem';
+    msgDiv.style.color = 'var(--text-primary)';
+    msgDiv.style.lineHeight = '1.5';
+
+    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    msgDiv.innerHTML = `<strong style="color:var(--neon-cyan); display:block; margin-bottom:0.25rem;"><i class="fa-solid ${sender==='user'?'fa-user':'fa-robot'}"></i> ${sender==='user'?'You':'Agent'}:</strong> <div>${formatted}</div>`;
+    chat.appendChild(msgDiv);
+    chat.scrollTop = chat.scrollHeight;
+  }
+</script>
+
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Page Not Found — RetinaScan AI{% endblock %}
+{% block content %}
+<div class="auth-container" style="max-width:540px; margin:5rem auto; text-align:center;">
+  <div class="card" style="border-color: rgba(255, 0, 122, 0.2); box-shadow: 0 0 25px rgba(255, 0, 122, 0.1), var(--shadow-glass);">
+    <div style="font-size:4rem; margin-bottom:1.25rem; color:var(--neon-pink); text-shadow:0 0 15px rgba(255, 0, 122, 0.4);"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h2 style="font-family:'Space Grotesk',sans-serif; color:white; font-size:1.8rem; margin-bottom:0.5rem;">404 - Node Not Found</h2>
+    <p style="color:var(--text-secondary); margin-bottom:1.75rem; font-size:0.95rem;">The diagnostic coordinate path you requested does not exist on this network terminal.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary" style="background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple)); box-shadow: 0 0 15px rgba(255, 0, 122, 0.35);"><i class="fa-solid fa-house"></i> Return to Station</a>
+  </div>
+</div>
+{% endblock %}

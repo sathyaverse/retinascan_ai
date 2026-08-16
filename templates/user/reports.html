@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}My Reports — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>My Reports</h1>
+</div>
+
+<div class="card">
+  {% if scans %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Scan ID</th><th>Date</th><th>Eye</th>
+        <th>Diagnosis</th><th>Confidence</th><th>Status</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for scan in scans %}
+      <tr>
+        <td>#{{ scan.id }}</td>
+        <td>{{ scan.created_at.strftime('%d %b %Y') }}</td>
+        <td>{{ scan.eye_side }}</td>
+        <td>
+          <span class="badge badge-{{ scan.predicted_class.lower().replace(' ', '-') if scan.predicted_class else 'pending' }}">
+            {{ scan.predicted_class or 'N/A' }}
+          </span>
+        </td>
+        <td>{{ (scan.confidence * 100)|round(1) if scan.confidence else 'N/A' }}%</td>
+        <td>
+          <span class="status-pill status-{{ scan.status }}">{{ scan.status }}</span>
+        </td>
+        <td>
+          <a href="{{ url_for('results', scan_id=scan.id) }}" class="link">View</a>
+          &nbsp;|&nbsp;
+          <a href="{{ url_for('download_report', scan_id=scan.id) }}" class="link">PDF</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <p>No processed scans available. <a href="{{ url_for('upload') }}">Upload a scan</a> to get started.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

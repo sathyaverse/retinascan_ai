@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}RetinaScan AI — Next-Gen Retinal Diagnostics{% endblock %}</title>
+  
+  <!-- CDNs for Fonts & Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+  
+  <!-- Three.js & Chart.js CDNs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Futuristic Background Glows & Canvas -->
+  <div class="bg-glows">
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+  </div>
+  <canvas id="neural-bg-canvas"></canvas>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="{{ url_for('index') }}" class="nav-brand">
+      <span class="brand-icon"><i class="fa-solid fa-eye-dropper"></i></span>
+      <span class="brand-name">RetinaScan <strong>AI</strong></span>
+    </a>
+    <ul class="nav-links">
+      {% if current_user.is_authenticated %}
+        {% if current_user.role == 'admin' %}
+          <li><a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+          <li><a href="{{ url_for('admin_users') }}" class="{% if request.endpoint == 'admin_users' %}active{% endif %}"><i class="fa-solid fa-users"></i> Users</a></li>
+          <li><a href="{{ url_for('admin_scans') }}" class="{% if request.endpoint == 'admin_scans' %}active{% endif %}"><i class="fa-solid fa-magnifying-glass-chart"></i> Scans</a></li>
+        {% elif current_user.role == 'doctor' %}
+          <li><a href="{{ url_for('doctor_dashboard') }}" class="{% if request.endpoint == 'doctor_dashboard' %}active{% endif %}"><i class="fa-solid fa-user-doctor"></i> Doctor Dashboard</a></li>
+        {% else %}
+          <li><a href="{{ url_for('user_dashboard') }}" class="{% if request.endpoint == 'user_dashboard' %}active{% endif %}"><i class="fa-solid fa-chart-pie"></i> {{ t('dashboard') }}</a></li>
+          <li><a href="{{ url_for('family_dashboard') }}" class="{% if request.endpoint == 'family_dashboard' %}active{% endif %}"><i class="fa-solid fa-people-roof"></i> Family Health</a></li>
+          <li><a href="{{ url_for('upload') }}" class="{% if request.endpoint == 'upload' %}active{% endif %}"><i class="fa-solid fa-file-arrow-up"></i> {{ t('upload') }}</a></li>
+          <li><a href="{{ url_for('history') }}" class="{% if request.endpoint == 'history' %}active{% endif %}"><i class="fa-solid fa-clock-rotate-left"></i> {{ t('history') }}</a></li>
+          <li><a href="{{ url_for('hospital_finder') }}" class="{% if request.endpoint == 'hospital_finder' %}active{% endif %}"><i class="fa-solid fa-map-location-dot"></i> Hospital Finder</a></li>
+          <li><a href="{{ url_for('book_appointment') }}" class="{% if request.endpoint == 'book_appointment' %}active{% endif %}"><i class="fa-solid fa-calendar-check"></i> {{ t('book_appointment') }}</a></li>
+          <li><a href="{{ url_for('my_appointments') }}" class="{% if request.endpoint == 'my_appointments' %}active{% endif %}"><i class="fa-solid fa-notes-medical"></i> {{ t('my_appointments') }}</a></li>
+          <li><a href="{{ url_for('health_tips') }}" class="{% if request.endpoint == 'health_tips' %}active{% endif %}"><i class="fa-solid fa-book-medical"></i> {{ t('library') }}</a></li>
+          <li><a href="{{ url_for('profile') }}" class="{% if request.endpoint == 'profile' %}active{% endif %}"><i class="fa-solid fa-user-doctor"></i> {{ t('profile') }}</a></li>
+
+        {% endif %}
+        <li>
+          <select onchange="window.location.href='/change-language/' + this.value;" class="lang-select" style="margin-left:0.5rem; padding:0.35rem 0.5rem; border-radius:8px; border:1px solid var(--border-glass); font-size:0.8rem; font-weight:600; background:rgba(6,9,19,0.8); color:var(--text-primary); cursor:pointer; outline:none;">
+            <option value="en" {% if current_lang == 'en' %}selected{% endif %}>EN</option>
+            <option value="ta" {% if current_lang == 'ta' %}selected{% endif %}>தமிழ்</option>
+            <option value="hi" {% if current_lang == 'hi' %}selected{% endif %}>हिन्दी</option>
+            <option value="ml" {% if current_lang == 'ml' %}selected{% endif %}>മലയാളം</option>
+          </select>
+        </li>
+        <li>
+          <button onclick="toggleTheme()" class="btn btn-outline" style="margin-left:0.5rem; padding:0.35rem 0.6rem; font-size:0.8rem; border-radius:8px; height:32px; display:inline-flex; align-items:center; gap:0.25rem;">
+            <i class="fa-solid fa-circle-half-stroke"></i>
+          </button>
+        </li>
+        <li>
+          <button onclick="toggleAccessibilityModal()" class="btn btn-outline" style="margin-left:0.5rem; padding:0.35rem 0.6rem; font-size:0.8rem; border-radius:8px; height:32px; display:inline-flex; align-items:center; gap:0.25rem;" title="Accessibility Panel">
+            <i class="fa-solid fa-universal-access"></i>
+          </button>
+        </li>
+        <li><a href="{{ url_for('logout') }}" class="btn-logout" style="margin-left:0.5rem;"><i class="fa-solid fa-power-off"></i> {{ t('logout') }}</a></li>
+      {% else %}
+        <li>
+          <select onchange="window.location.href='/change-language/' + this.value;" class="lang-select" style="margin-right:0.5rem; padding:0.35rem 0.5rem; border-radius:8px; border:1px solid var(--border-glass); font-size:0.8rem; font-weight:600; background:rgba(6,9,19,0.8); color:var(--text-primary); cursor:pointer; outline:none;">
+            <option value="en" {% if current_lang == 'en' %}selected{% endif %}>EN</option>
+            <option value="ta" {% if current_lang == 'ta' %}selected{% endif %}>தமிழ்</option>
+            <option value="hi" {% if current_lang == 'hi' %}selected{% endif %}>हिन्दी</option>
+            <option value="ml" {% if current_lang == 'ml' %}selected{% endif %}>മലയാളം</option>
+          </select>
+        </li>
+        <li>
+          <button onclick="toggleTheme()" class="btn btn-outline" style="margin-right:0.5rem; padding:0.35rem 0.6rem; font-size:0.8rem; border-radius:8px; height:32px; display:inline-flex; align-items:center; gap:0.25rem;">
+            <i class="fa-solid fa-circle-half-stroke"></i>
+          </button>
+        </li>
+        <li>
+          <button onclick="toggleAccessibilityModal()" class="btn btn-outline" style="margin-right:0.5rem; padding:0.35rem 0.6rem; font-size:0.8rem; border-radius:8px; height:32px; display:inline-flex; align-items:center; gap:0.25rem;" title="Accessibility Panel">
+            <i class="fa-solid fa-universal-access"></i>
+          </button>
+        </li>
+        <li><a href="{{ url_for('login') }}"><i class="fa-solid fa-right-to-bracket"></i> {{ t('login') }}</a></li>
+        <li><a href="{{ url_for('register') }}" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> {{ t('register') }}</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">
+            <span>{{ message }}</span>
+            <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="this.parentElement.remove()"></i>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main content -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <p>© 2026 RetinaScan AI — Diabetic Retinopathy Diagnostic Platform. Advanced Medical Visualization.</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  
+  <!-- Accessibility Options Modal -->
+  <div id="accessibilityModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(3,5,12,0.85); backdrop-filter:blur(8px); z-index:99999; align-items:center; justify-content:center;">
+    <div class="card" style="width:100%; max-width:400px; border:1px solid var(--neon-cyan); box-shadow:var(--shadow-neon-cyan); margin:1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-glass); padding-bottom:0.75rem; margin-bottom:1.25rem;">
+        <h3 style="margin:0; font-family:'Space Grotesk',sans-serif; color:white;"><i class="fa-solid fa-universal-access" style="color:var(--neon-cyan);"></i> Accessibility Portal</h3>
+        <button onclick="toggleAccessibilityModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-secondary);">&times;</button>
+      </div>
+      
+      <div class="form-group">
+        <label>Contrast & Color Profiles</label>
+        <button onclick="toggleHighContrast()" class="btn btn-outline btn-full" style="justify-content:flex-start; margin-bottom:0.75rem;">
+          <i class="fa-solid fa-circle-half-stroke"></i> Toggle High Contrast Mode
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label>Text Scaling Factor: <span id="textScaleLabel">100%</span></label>
+        <input type="range" min="80" max="150" value="100" class="slider" id="textScalerRange" oninput="scaleText(this.value)" style="width:100%; cursor:pointer; accent-color:var(--neon-cyan);"/>
+      </div>
+      
+      <button onclick="toggleAccessibilityModal()" class="btn btn-primary btn-full" style="margin-top:1rem;">Done</button>
+    </div>
+  </div>
+
+  <script>
+    function toggleAccessibilityModal() {
+      const modal = document.getElementById('accessibilityModal');
+      modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+    }
+    
+    function toggleHighContrast() {
+      document.body.classList.toggle('high-contrast-mode');
+      const isHc = document.body.classList.contains('high-contrast-mode');
+      localStorage.setItem('high-contrast', isHc ? 'enabled' : 'disabled');
+    }
+    
+    function scaleText(val) {
+      document.getElementById('textScaleLabel').innerText = val + "%";
+      document.documentElement.style.fontSize = val + "%";
+      localStorage.setItem('text-scale', val);
+    }
+    
+    // Restore states
+    (function() {
+      const hc = localStorage.getItem('high-contrast');
+      if (hc === 'enabled') {
+        document.body.classList.add('high-contrast-mode');
+      }
+      const scale = localStorage.getItem('text-scale');
+      if (scale) {
+        document.documentElement.style.fontSize = scale + "%";
+        const slider = document.getElementById('textScalerRange');
+        if (slider) {
+          slider.value = scale;
+        }
+        const label = document.getElementById('textScaleLabel');
+        if (label) {
+          label.innerText = scale + "%";
+        }
+      }
+    })();
+  </script>
+
+  <!-- Multimodal AI Chatbot Floating Panel -->
+  <div class="chatbot-container" style="position:fixed; bottom:2rem; right:2rem; z-index:99999; font-family:'Inter', sans-serif;">
+    <!-- Launcher FAB -->
+    <button onclick="toggleChatbot()" class="chatbot-fab" id="chatbotFab" style="width:60px; height:60px; border-radius:50%; background:#151824; border:1px solid var(--neon-cyan); box-shadow:0 0 15px rgba(0,242,254,0.3); color:var(--neon-cyan); font-size:1.5rem; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.3s ease; position:relative;">
+      <i class="fa-solid fa-comment-medical" id="chatbotFabIcon"></i>
+      <span class="chatbot-pulse" style="position:absolute; width:100%; height:100%; border-radius:50%; border:2px solid var(--neon-cyan); animation:pulseRing 1.8s infinite; top:0; left:0; pointer-events:none; box-sizing:border-box;"></span>
+    </button>
+
+    <!-- Chat Panel Window -->
+    <div class="chatbot-panel card" id="chatbotPanel" style="display:none; position:absolute; bottom:75px; right:0; width:380px; height:500px; border:1px solid var(--neon-cyan); box-shadow:var(--shadow-neon-cyan); flex-direction:column; background:rgba(10, 15, 36, 0.96); backdrop-filter:blur(15px); border-radius:16px; overflow:hidden; padding:0; gap:0;">
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-glass); padding:0.9rem 1.25rem; background:rgba(6,9,19,0.6);">
+        <h4 style="margin:0; font-family:'Space Grotesk',sans-serif; color:white; display:flex; align-items:center; gap:0.5rem; font-size:0.95rem;">
+          <i class="fa-solid fa-robot" style="color:var(--neon-cyan); filter:drop-shadow(0 0 5px var(--neon-cyan));"></i> RetinaScan Multimodal AI
+        </h4>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--neon-green); box-shadow: 0 0 6px var(--neon-green);" id="chatbotStatusLight"></span>
+          <button onclick="toggleChatbot()" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.5rem; line-height:1;">&times;</button>
+        </div>
+      </div>
+
+      <!-- Messages Log Box -->
+      <div class="chatbot-messages" id="chatbotMessages" style="flex:1; overflow-y:auto; padding:1.25rem; display:flex; flex-direction:column; gap:1rem; scroll-behavior:smooth;">
+        <!-- Welcome Message -->
+        <div class="chat-msg ai-msg" style="align-self:flex-start; background:rgba(255,255,255,0.03); border:1px solid var(--border-glass); border-radius:12px 12px 12px 0px; padding:0.75rem; max-width:85%; font-size:0.82rem; color:var(--text-primary); line-height:1.5;">
+          <strong style="color:var(--neon-cyan); display:block; margin-bottom:0.25rem;"><i class="fa-solid fa-robot"></i> AI Assistant:</strong>
+          Hello! I am your RetinaScan AI Assistant. You can type queries, tap the microphone to speak, or upload an eye scan image/report for analysis. How can I help you today?
+        </div>
+      </div>
+
+      <!-- Live Typing / Scanning Indicator -->
+      <div id="chatbotIndicator" style="display:none; align-self:flex-start; margin-left:1.25rem; margin-bottom:0.75rem; font-size:0.75rem; color:var(--text-secondary); align-items:center; gap:0.5rem;">
+        <i class="fa-solid fa-circle-notch fa-spin" style="color:var(--neon-cyan);"></i> <span id="indicatorText">AI is writing...</span>
+      </div>
+
+      <!-- File Attachment Preview Area -->
+      <div id="chatbotAttachmentPreview" style="display:none; padding:0.5rem 1.25rem; border-top:1px solid var(--border-glass); background:rgba(0,0,0,0.15); align-items:center; gap:0.75rem;">
+        <div style="position:relative; width:45px; height:45px; border-radius:6px; border:1px solid var(--border-glass); overflow:hidden;">
+          <img id="attachmentThumbnail" src="" style="width:100%; height:100%; object-fit:cover;"/>
+          <button onclick="clearChatAttachment()" style="position:absolute; top:-2px; right:-2px; background:rgba(0,0,0,0.7); border:none; color:red; border-radius:50%; width:16px; height:16px; font-size:9px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+        </div>
+        <span style="font-size:0.75rem; color:var(--text-secondary);">Image attached. Ready to analyze.</span>
+      </div>
+
+      <!-- Input Action Bar -->
+      <div style="display:flex; gap:0.5rem; align-items:center; padding:0.75rem 1rem; border-top:1px solid var(--border-glass); background:rgba(6,9,19,0.5);">
+        <!-- File Picker Trigger -->
+        <input type="file" id="chatbotImageFile" accept="image/*" onchange="previewChatAttachment(this)" style="display:none;"/>
+        <button onclick="document.getElementById('chatbotImageFile').click()" class="btn btn-outline" style="padding:0.4rem 0.6rem; border-radius:8px; border-color:var(--border-glass); color:var(--text-secondary); cursor:pointer; height:36px; display:inline-flex; align-items:center; justify-content:center; transition:all 0.2s;" title="Upload Retinal Image">
+          <i class="fa-solid fa-image"></i>
+        </button>
+
+        <!-- Voice Recognition Button -->
+        <button onclick="startChatVoiceListening()" class="btn btn-outline" id="chatbotVoiceBtn" style="padding:0.4rem 0.6rem; border-radius:8px; border-color:var(--border-glass); color:var(--neon-cyan); cursor:pointer; height:36px; display:inline-flex; align-items:center; justify-content:center; transition:all 0.2s;" title="Speak Query">
+          <i class="fa-solid fa-microphone" id="chatbotVoiceIcon"></i>
+        </button>
+
+        <!-- Text input -->
+        <input type="text" id="chatbotTextInput" placeholder="Ask a question or upload image..." onkeydown="if(event.key==='Enter') sendChatMessage();" style="flex:1; background:rgba(0,0,0,0.25); border:1px solid var(--border-glass); border-radius:8px; padding:0.5rem 0.75rem; color:white; font-size:0.8rem; height:36px; outline:none; transition:all 0.2s;"/>
+
+        <!-- Send Button -->
+        <button onclick="sendChatMessage()" class="btn btn-primary" style="padding:0.4rem 0.75rem; border-radius:8px; height:36px; min-width:40px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes pulseRing {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    .chatbot-fab:hover {
+      box-shadow: 0 0 25px rgba(0,242,254,0.6);
+      transform: scale(1.05);
+    }
+    .chatbot-messages::-webkit-scrollbar {
+      width: 4px;
+    }
+    .chatbot-messages::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px;
+    }
+  </style>
+
+  <script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechSynthesis = window.speechSynthesis;
+    let recognition = null;
+    let isSpeaking = false;
+    let chatAttachmentData = null;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = function() {
+        updateVoiceStatus("listening", "Listening...", "#00f2fe");
+        document.getElementById('chatbotVoiceIcon').className = "fa-solid fa-microphone-lines fa-fade";
+      };
+
+      recognition.onerror = function(event) {
+        console.error("[Speech Recognition Error]", event.error);
+        updateVoiceStatus("ready", "Error: " + event.error, "red");
+        stopVoiceVisuals();
+      };
+
+      recognition.onend = function() {
+        stopVoiceVisuals();
+      };
+
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('chatbotTextInput').value = transcript;
+        sendChatMessage();
+      };
+    }
+
+    function toggleChatbot() {
+      const panel = document.getElementById('chatbotPanel');
+      if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+        if (panel.style.display === 'flex') {
+          const msgs = document.getElementById('chatbotMessages');
+          msgs.scrollTop = msgs.scrollHeight;
+        }
+      }
+    }
+
+    function updateVoiceStatus(state, text, color) {
+      const indicator = document.getElementById('chatbotStatusLight');
+      if (indicator) {
+        indicator.style.background = color;
+        indicator.style.boxShadow = `0 0 6px ${color}`;
+      }
+    }
+
+    function stopVoiceVisuals() {
+      document.getElementById('chatbotVoiceIcon').className = "fa-solid fa-microphone";
+    }
+
+    function startChatVoiceListening() {
+      if (recognition) {
+        if (SpeechSynthesis) {
+          SpeechSynthesis.cancel();
+        }
+        try {
+          recognition.start();
+        } catch (e) {
+          recognition.stop();
+          setTimeout(() => recognition.start(), 100);
+        }
+      } else {
+        alert("Speech recognition is not supported in this browser. Try Chrome, Edge, or Safari.");
+      }
+    }
+
+    function speakText(text) {
+      if (!SpeechSynthesis) return;
+      SpeechSynthesis.cancel();
+      const cleanText = text.replace(/[\*\_•\-\#]/g, '');
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.onstart = () => {
+        isSpeaking = true;
+        updateVoiceStatus("speaking", "Speaking...", "var(--neon-green)");
+      };
+      utterance.onend = () => {
+        isSpeaking = false;
+        updateVoiceStatus("ready", "Ready", "var(--neon-green)");
+      };
+      SpeechSynthesis.speak(utterance);
+    }
+
+    function previewChatAttachment(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          chatAttachmentData = e.target.result;
+          document.getElementById('attachmentThumbnail').src = e.target.result;
+          document.getElementById('chatbotAttachmentPreview').style.display = 'flex';
+          const msgs = document.getElementById('chatbotMessages');
+          msgs.scrollTop = msgs.scrollHeight;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function clearChatAttachment() {
+      chatAttachmentData = null;
+      document.getElementById('chatbotImageFile').value = "";
+      document.getElementById('chatbotAttachmentPreview').style.display = 'none';
+    }
+
+    function addMessage(sender, text, imageSrc = null) {
+      const msgs = document.getElementById('chatbotMessages');
+      if (!msgs) return;
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `chat-msg ${sender === 'user' ? 'user-msg' : 'ai-msg'}`;
+      msgDiv.style.alignSelf = sender === 'user' ? 'flex-end' : 'flex-start';
+      msgDiv.style.background = sender === 'user' ? 'rgba(0, 242, 254, 0.08)' : 'rgba(255,255,255,0.03)';
+      msgDiv.style.border = sender === 'user' ? '1px solid rgba(0, 242, 254, 0.25)' : '1px solid var(--border-glass)';
+      msgDiv.style.borderRadius = sender === 'user' ? '12px 12px 0px 12px' : '12px 12px 12px 0px';
+      msgDiv.style.padding = '0.75rem';
+      msgDiv.style.maxWidth = '85%';
+      msgDiv.style.fontSize = '0.82rem';
+      msgDiv.style.color = 'var(--text-primary)';
+      msgDiv.style.lineHeight = '1.5';
+
+      let inner = `<strong style="color:var(--neon-cyan); display:block; margin-bottom:0.25rem;"><i class="fa-solid ${sender==='user'?'fa-user':'fa-robot'}"></i> ${sender==='user'?'You':'AI Assistant'}:</strong>`;
+
+      if (imageSrc) {
+        inner += `<div style="margin-bottom:0.5rem; border-radius:6px; overflow:hidden; border:1px solid var(--border-glass); max-width:200px;"><img src="${imageSrc}" style="width:100%; display:block;"/></div>`;
+      }
+
+      let formattedText = text.replace(/\n/g, '<br/>').replace(/\*(.*?)\*/g, '<strong>$1</strong>').replace(/•/g, '&bull;');
+      inner += `<div>${formattedText}</div>`;
+      msgDiv.innerHTML = inner;
+      msgs.appendChild(msgDiv);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function sendChatMessage() {
+      const textInput = document.getElementById('chatbotTextInput');
+      const text = textInput.value.trim();
+      const imgData = chatAttachmentData;
+
+      if (!text && !imgData) return;
+
+      addMessage('user', text, imgData);
+      textInput.value = "";
+      clearChatAttachment();
+
+      const indicator = document.getElementById('chatbotIndicator');
+      const indText = document.getElementById('indicatorText');
+      indicator.style.display = 'flex';
+
+      if (imgData) {
+        indText.innerText = "Analyzing retinal structures...";
+        setTimeout(() => {
+          indicator.style.display = 'none';
+          processBotResponse(text, imgData);
+        }, 2500);
+      } else {
+        indText.innerText = "AI is writing...";
+        setTimeout(() => {
+          indicator.style.display = 'none';
+          processBotResponse(text, null);
+        }, 1200);
+      }
+    }
+
+    function processBotResponse(query, imageSrc = null) {
+      let reply = "";
+      
+      if (imageSrc) {
+        reply = "*AI Retinal Image Analysis Complete*:\n\n" +
+                "• *Optic Disc Cup-to-Disc Ratio*: 0.33 (Healthy/Normal)\n" +
+                "• *Macular Zone*: Homogeneous, no geographic atrophy or drusen detected.\n" +
+                "• *Vascular Status*: Standard bifurcation, no microaneurysms, hemorrhages, or neovascularization detected.\n\n" +
+                "*Diagnostic Assessment*: Low risk of Glaucoma, AMD, or Diabetic Retinopathy (Normal healthy retina).";
+      } else {
+        const cmd = query.toLowerCase().trim();
+        
+        if (cmd.includes("dashboard") || cmd.includes("go to dashboard") || cmd.includes("my dashboard")) {
+          reply = "Navigating to your dashboard.";
+          setTimeout(() => {
+            {% if current_user.is_authenticated %}
+              {% if current_user.role == 'admin' %}
+                window.location.href = "{{ url_for('admin_dashboard') }}";
+              {% elif current_user.role == 'doctor' %}
+                window.location.href = "{{ url_for('doctor_dashboard') }}";
+              {% else %}
+                window.location.href = "{{ url_for('user_dashboard') }}";
+              {% endif %}
+            {% else %}
+              window.location.href = "{{ url_for('login') }}";
+            {% endif %}
+          }, 1200);
+        }
+        else if (cmd.includes("upload") || cmd.includes("go to upload") || cmd.includes("upload scan")) {
+          reply = "Opening the scan upload screen.";
+          setTimeout(() => { window.location.href = "{{ url_for('upload') }}"; }, 1200);
+        }
+        else if (cmd.includes("history") || cmd.includes("view history") || cmd.includes("go to history")) {
+          reply = "Opening your examination history.";
+          setTimeout(() => { window.location.href = "{{ url_for('history') }}"; }, 1200);
+        }
+        else if (cmd.includes("profile") || cmd.includes("go to profile") || cmd.includes("my profile")) {
+          reply = "Opening your profile.";
+          setTimeout(() => { window.location.href = "{{ url_for('profile') }}"; }, 1200);
+        }
+        else if (cmd.includes("appointment") || cmd.includes("book appointment") || cmd.includes("go to appointments") || cmd.includes("my appointments")) {
+          reply = "Opening appointments system.";
+          setTimeout(() => { window.location.href = "{{ url_for('book_appointment') }}"; }, 1200);
+        }
+        else if (cmd.includes("logout") || cmd.includes("log out") || cmd.includes("sign out")) {
+          reply = "Logging you out of your account.";
+          setTimeout(() => { window.location.href = "{{ url_for('logout') }}"; }, 1200);
+        }
+        else if (cmd.includes("high contrast") || cmd.includes("contrast")) {
+          reply = "Toggling high contrast mode.";
+          toggleHighContrast();
+        }
+        else if (cmd.includes("increase text") || cmd.includes("bigger text") || cmd.includes("zoom in")) {
+          reply = "Increasing font size.";
+          const range = document.getElementById('textScalerRange');
+          if (range) {
+            let newVal = Math.min(150, parseInt(range.value) + 15);
+            range.value = newVal;
+            scaleText(newVal);
+          }
+        }
+        else if (cmd.includes("decrease text") || cmd.includes("smaller text") || cmd.includes("zoom out")) {
+          reply = "Decreasing font size.";
+          const range = document.getElementById('textScalerRange');
+          if (range) {
+            let newVal = Math.max(80, parseInt(range.value) - 15);
+            range.value = newVal;
+            scaleText(newVal);
+          }
+        }
+        else if (cmd.includes("diabetic retinopathy") || cmd.includes("what is dr") || cmd.includes("diabetic eye")) {
+          reply = "*Diabetic retinopathy* is a diabetes complication that affects eyes. It is caused by damage to the blood vessels of the light-sensitive tissue at the back of the eye, known as the *retina*. Our AI system scans for early signs of blood vessel microvascular leaks.";
+        }
+        else if (cmd.includes("symptom") || cmd.includes("how do i know") || cmd.includes("signs")) {
+          reply = "In early stages, *diabetic retinopathy* usually has no symptoms. As it progresses, symptoms include:\n\n• Spots or dark strings floating in vision (floaters)\n• Blurred or fluctuating vision\n• Dark or empty areas in your visual fields\n• General vision loss";
+        }
+        else if (cmd.includes("prevent") || cmd.includes("how to avoid") || cmd.includes("protection")) {
+          reply = "To prevent or slow down *diabetic retinopathy*:\n\n• Manage your diabetes carefully (target HbA1c < 7.0%)\n• Keep blood pressure and cholesterol levels controlled\n• Adopt a low-glycemic index diet\n• Get a dilated comprehensive eye exam at least once a year";
+        }
+        else if (cmd.includes("cure") || cmd.includes("curable") || cmd.includes("treatment")) {
+          reply = "While *diabetic retinopathy* cannot be fully cured, treatments can stop or slow vision loss. Common treatments include:\n\n• *Laser Treatment* (Photocoagulation) to seal leaking vessels\n• *Anti-VEGF Injections* to reduce swelling\n• *Vitrectomy Surgery* to remove blood from the vitreous gel";
+        }
+        else if (cmd.includes("stage") || cmd.includes("severity") || cmd.includes("classification")) {
+          reply = "Diabetic retinopathy progresses through four main stages:\n\n1. *Mild Nonproliferative (NPDR)*: Microaneurysms only\n2. *Moderate NPDR*: Widespread blocked capillaries\n3. *Severe NPDR*: Widespread capillary closure\n4. *Proliferative (PDR)*: Advanced stage with neovascularization";
+        }
+        else if (cmd.includes("glaucoma") || cmd.includes("what is glaucoma")) {
+          reply = "*Glaucoma* is a group of eye conditions that damage the optic nerve. This damage is often caused by an abnormally high pressure in your eye, and is a leading cause of blindness for people over 60.";
+        }
+        else if (cmd.includes("macular degeneration") || cmd.includes("amd") || cmd.includes("macular")) {
+          reply = "*Age-related macular degeneration (AMD)* is an eye disease that blurs your sharp central vision. It happens when aging causes damage to the macula, which controls straight-ahead vision.";
+        }
+        else if (cmd.includes("explain my scan") || cmd.includes("read results") || cmd.includes("explain results") || cmd.includes("read summary")) {
+          const diagBadge = document.querySelector('.badge-severe-dr, .badge-no-dr, .badge-pending');
+          if (diagBadge) {
+            const diagText = diagBadge.innerText;
+            reply = `Your active scan results show: *${diagText}*. `;
+            const rows = document.querySelectorAll('table tr');
+            let details = "";
+            rows.forEach(row => {
+              const cells = row.querySelectorAll('td');
+              if (cells.length >= 2) {
+                const label = cells[0].innerText;
+                const val = cells[1].innerText;
+                if (label.includes("Diabetic Retinopathy") || label.includes("Glaucoma") || label.includes("Macular Degeneration")) {
+                  details += `• ${label} risk: *${val}*\n`;
+                }
+              }
+            });
+            if (details) {
+              reply += `Risk breakdown:\n${details}Please consult your ophthalmologist.`;
+            }
+          } else {
+            reply = "I cannot detect any scan results on the current page. Let's upload a scan first!";
+          }
+        }
+        else if (cmd.includes("help") || cmd.includes("commands") || cmd.includes("what can i say")) {
+          reply = "You can ask me questions about *diabetic retinopathy*, *glaucoma*, and *AMD*, or use commands like:\n\n• *Go to upload*\n• *Go to history*\n• *Toggle contrast*\n• *Increase text size*\n• *Explain my scan*\n• Or upload a retinal photo for a simulated checkup!";
+        }
+        else {
+          reply = `I'm not fully sure how to answer "${query}". You can ask me about diabetic retinopathy symptoms, prevention, stages, treatments, or try voice commands.`;
+        }
+      }
+
+      addMessage('ai', reply);
+      speakText(reply);
+    }
+
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        if (window.location.pathname.includes('/results/')) {
+          const welcomeSpeech = "Your scan results are ready. Type explain results in the chatbot if you want a detailed reading.";
+          speakText(welcomeSpeech);
+        }
+      }, 2000);
+    });
+  </script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

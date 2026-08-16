@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Profile — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-address-card" style="color:var(--neon-cyan);"></i> Patient Profile</h1>
+  <p>Manage clinical demographics, eye diagnostics compliance, and medical telemetry credentials</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start;">
+  
+  <!-- Interactive 3D Mouse-Tilt Profile Card -->
+  <div class="card tilt-card" style="margin:0; box-shadow: 0 0 25px rgba(0, 240, 255, 0.1), var(--shadow-glass);">
+    <div class="tilt-content">
+      <div style="display:flex; align-items:center; gap:1.25rem; margin-bottom:1.5rem;">
+        <div style="width:70px; height:70px; border-radius:50%; background:linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); display:flex; align-items:center; justify-content:center; font-size:2.2rem; color:#060913; box-shadow:var(--shadow-neon-cyan);">
+          <i class="fa-solid fa-user-injured"></i>
+        </div>
+        <div>
+          <h2 style="font-family:'Space Grotesk',sans-serif; color:white; font-size:1.5rem; margin:0;">{{ current_user.name }}</h2>
+          <span style="font-size:0.82rem; color:var(--text-secondary);"><i class="fa-solid fa-hashtag"></i> Patient UID: PAT-{{ "%04d"|format(current_user.id) }}</span>
+        </div>
+      </div>
+
+      <h3 style="font-size:1rem; border-bottom:1px solid var(--border-glass); padding-bottom:0.5rem; margin-bottom:0.75rem;"><i class="fa-solid fa-shield-halved" style="color:var(--neon-cyan);"></i> Floating Credentials</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1.5rem;">
+        <div style="background:rgba(0, 255, 102, 0.05); border:1px solid rgba(0, 255, 102, 0.15); border-radius:8px; padding:0.6rem; display:flex; align-items:center; gap:0.5rem;">
+          <i class="fa-solid fa-circle-check" style="color:var(--neon-green);"></i>
+          <div style="font-size:0.75rem; color:white;"><strong>Identity Verified</strong><br><span style="color:var(--text-secondary);">Active Profile</span></div>
+        </div>
+        <div style="background:rgba(0, 240, 255, 0.05); border:1px solid rgba(0, 240, 255, 0.15); border-radius:8px; padding:0.6rem; display:flex; align-items:center; gap:0.5rem;">
+          <i class="fa-solid fa-lock" style="color:var(--neon-cyan);"></i>
+          <div style="font-size:0.75rem; color:white;"><strong>Secure Key</strong><br><span style="color:var(--text-secondary);">AES-256 Logs</span></div>
+        </div>
+        <div style="background:rgba(189, 0, 255, 0.05); border:1px solid rgba(189, 0, 255, 0.15); border-radius:8px; padding:0.6rem; display:flex; align-items:center; gap:0.5rem;">
+          <i class="fa-solid fa-circle-nodes" style="color:var(--neon-purple);"></i>
+          <div style="font-size:0.75rem; color:white;"><strong>HL7 Connected</strong><br><span style="color:var(--text-secondary);">FHIR Interface</span></div>
+        </div>
+        <div style="background:rgba(255, 0, 122, 0.05); border:1px solid rgba(255, 0, 122, 0.15); border-radius:8px; padding:0.6rem; display:flex; align-items:center; gap:0.5rem;">
+          <i class="fa-solid fa-calendar-days" style="color:var(--neon-pink);"></i>
+          <div style="font-size:0.75rem; color:white;"><strong>Scan Compliant</strong><br><span style="color:var(--text-secondary);">Periodic Checks</span></div>
+        </div>
+      </div>
+
+      <h3 style="font-size:1rem; border-bottom:1px solid var(--border-glass); padding-bottom:0.5rem; margin-bottom:0.75rem;"><i class="fa-solid fa-heart-pulse" style="color:var(--neon-pink);"></i> Health Statistics</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; text-align:center;">
+        <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:8px; padding:0.75rem;">
+          <span style="display:block; font-size:1.4rem; font-family:'Orbitron',sans-serif; color:white; font-weight:700;">{{ current_user.scans|length if current_user.scans else 0 }}</span>
+          <span style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase;">Scans Run</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:8px; padding:0.75rem;">
+          <span style="display:block; font-size:1.4rem; font-family:'Orbitron',sans-serif; color:var(--neon-green); font-weight:700;">100%</span>
+          <span style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase;">Validity</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:8px; padding:0.75rem;">
+          <span style="display:block; font-size:1.4rem; font-family:'Orbitron',sans-serif; color:var(--neon-cyan); font-weight:700;">{{ current_user.age or 'N/A' }}</span>
+          <span style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase;">Age</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demographics Editor Card -->
+  <div class="card" style="margin:0;">
+    <h3><i class="fa-solid fa-user-pen" style="color:var(--neon-cyan);"></i> Modify Clinical Records</h3>
+    <form method="POST" action="{{ url_for('profile') }}">
+      <div class="form-group">
+        <label><i class="fa-regular fa-user"></i> Full Name</label>
+        <input type="text" name="name" value="{{ current_user.name }}" required/>
+      </div>
+      <div class="form-group">
+        <label><i class="fa-regular fa-envelope"></i> Email (Read-only)</label>
+        <input type="email" value="{{ current_user.email }}" disabled style="opacity:0.65; cursor:not-allowed;"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label><i class="fa-solid fa-mobile-screen-button"></i> Phone Number</label>
+          <input type="text" name="phone" value="{{ current_user.phone or '' }}" placeholder="+91 XXXXXXXXXX"/>
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-circle-info"></i> Age</label>
+          <input type="number" name="age" value="{{ current_user.age or '' }}" min="1" max="120"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label><i class="fa-solid fa-venus-mars"></i> Gender</label>
+          <select name="gender">
+            <option value="">-- Select --</option>
+            {% for g in ['Male','Female','Other'] %}
+              <option value="{{ g }}" {% if current_user.gender == g %}selected{% endif %}>{{ g }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-droplet"></i> Diabetes Class</label>
+          <select name="diabetes_type">
+            <option value="">-- Select --</option>
+            {% for t in ['Type 1','Type 2','Gestational','Pre-diabetic'] %}
+              <option value="{{ t }}" {% if current_user.diabetes_type == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="margin-top:0.75rem; width:100%;"><i class="fa-solid fa-floppy-disk"></i> Commit Profile Updates</button>
+    </form>
+  </div>
+
+</div>
+
+{% endblock %}

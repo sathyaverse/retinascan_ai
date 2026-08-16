@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('telemedicine') }} — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>🩺 {{ t('telemedicine') }}</h1>
+  <a href="{{ url_for('results', scan_id=scan.id) }}" class="btn btn-outline">← Exit Call</a>
+</div>
+
+<div class="dashboard-grid" style="grid-template-columns: 1.4fr 1fr; gap: 1.5rem; height: calc(100vh - 160px); min-height: 500px;">
+  
+  <!-- Left Column: Video Feeds -->
+  <div style="display: flex; flex-direction: column; gap: 1rem; height: 100%;">
+    <!-- Main Specialist Video Feed -->
+    <div style="flex: 1; background: #1c2130; border-radius: var(--radius); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow);">
+      <!-- Call Status / Connecting State -->
+      <div id="connecting-overlay" style="position: absolute; inset: 0; background: rgba(28, 33, 48, 0.95); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+        <div class="pulsing-circle" style="width: 80px; height: 80px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+          <span style="font-size: 2rem;">👁️</span>
+        </div>
+        <h3 style="margin: 0 0 0.5rem 0;">Connecting to {{ doctor.name }}...</h3>
+        <p style="font-size: 0.85rem; color: #a5b4fc; margin: 0;">Establishing encrypted clinical endpoint</p>
+      </div>
+
+      <!-- Doctor Webcam (Hidden at first, shown after 2.5 seconds) -->
+      <div id="doctor-feed" style="display: none; width: 100%; height: 100%; position: relative;">
+        <!-- Simulated feed background -->
+        <div style="position: absolute; inset: 0; background: radial-gradient(circle at center, #2e3549 0%, #171a25 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+          <div style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 3rem; background: #2c3e50; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+            {{ doctor.name.split()[-1][0] }}
+          </div>
+          <h3 style="margin: 1rem 0 0.25rem 0; font-size: 1.4rem;">{{ doctor.name }}</h3>
+          <p style="font-size: 0.88rem; color: var(--primary); font-weight: 600; margin: 0;">{{ doctor.specialty }} (LIVE)</p>
+          
+          <!-- Pulsing Audio Wave Bar Mock -->
+          <div style="display: flex; gap: 4px; margin-top: 1.5rem; align-items: center; height: 20px;">
+            <div class="audio-bar" style="height: 10px;"></div>
+            <div class="audio-bar" style="height: 18px;"></div>
+            <div class="audio-bar" style="height: 12px;"></div>
+            <div class="audio-bar" style="height: 20px;"></div>
+            <div class="audio-bar" style="height: 14px;"></div>
+            <div class="audio-bar" style="height: 8px;"></div>
+          </div>
+        </div>
+
+        <span style="position: absolute; top: 1rem; left: 1rem; background: rgba(220, 38, 38, 0.85); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: bold; letter-spacing: 0.05em; display: flex; align-items: center; gap: 4px;">
+          <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: white; animation: blink 1s infinite;"></span> LIVE
+        </span>
+        <span style="position: absolute; bottom: 1rem; left: 1rem; background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.82rem;">
+          {{ doctor.name }}
+        </span>
+      </div>
+
+      <!-- Small Inset Patient Webcam (Self) -->
+      <div style="position: absolute; bottom: 1rem; right: 1rem; width: 130px; height: 95px; background: #2c3e50; border: 2px solid white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 12;">
+        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#34495e; color:white; font-size:0.75rem; text-align:center; padding: 0 5px; flex-direction: column;">
+          <span>👤 Patient Feed</span>
+          <small style="color:#2ecc71; font-size:0.65rem; margin-top:2px;">Camera Active</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Call Control Buttons Bar -->
+    <div class="card" style="margin-bottom: 0; padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: center; gap: 1rem; background: var(--surface);">
+      <button onclick="toggleAudio(this)" class="btn btn-outline" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; justify-content: center; align-items: center; font-size: 1.15rem;" title="Mute Mic">🎙️</button>
+      <button onclick="toggleVideo(this)" class="btn btn-outline" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; justify-content: center; align-items: center; font-size: 1.15rem;" title="Toggle Camera">📹</button>
+      <button onclick="shareScreen()" class="btn btn-outline" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; justify-content: center; align-items: center; font-size: 1.15rem;" title="Share Retinal Scan Report">🖥️</button>
+      <a href="{{ url_for('results', scan_id=scan.id) }}" class="btn btn-logout" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; justify-content: center; align-items: center; font-size: 1.15rem; background: #DC2626 !important; color: white !important;" title="End Call">📞</a>
+    </div>
+  </div>
+
+  <!-- Right Column: Consultation Panel (Dossier + Chat) -->
+  <div class="card" style="display: flex; flex-direction: column; height: 100%; margin-bottom: 0; padding: 1.25rem;">
+    <!-- Active Diagnosis Dossier -->
+    <div style="background: var(--bg); border-radius: var(--radius); padding: 0.75rem 1rem; border: 1px solid var(--border); margin-bottom: 1rem;">
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--primary);">📋 Clinical Reference Dossier</h4>
+      <div style="font-size: 0.8rem; line-height: 1.4;">
+        <strong>Patient:</strong> {{ current_user.name }} (Age: {{ current_user.age or 'N/A' }})<br/>
+        <strong>Scan Reference:</strong> #RS-{{ "%05d"|format(scan.id) }} (Eye: {{ scan.eye_side }})<br/>
+        <strong>AI Findings:</strong> {{ scan.predicted_class }} | Glaucoma: {{ (scan.glaucoma_prob*100)|round(1) }}% | AMD: {{ (scan.amd_prob*100)|round(1) }}%
+      </div>
+    </div>
+
+    <!-- Live Telehealth Chat Log -->
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius);">
+      <!-- Chat message containers -->
+      <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.85rem; background: #fdfdfd;">
+        <!-- System Message -->
+        <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin: 0.25rem 0;">
+          Secured clinical telehealth consultation started at <span id="call-time"></span>
+        </div>
+      </div>
+
+      <!-- Input box -->
+      <div style="display: flex; border-top: 1px solid var(--border); padding: 0.5rem; background: var(--bg);">
+        <input type="text" id="chat-input" placeholder="Type a message to specialist..." style="flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; font-size: 0.85rem; background: white;" onkeydown="if(event.key === 'Enter') sendMessage()"/>
+        <button onclick="sendMessage()" class="btn btn-primary" style="margin-left: 0.5rem; padding: 0.4rem 1rem; font-size: 0.85rem;">Send</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Styles and JavaScript for call mockup animations -->
+<style>
+.pulsing-circle {
+  box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.7);
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(26, 115, 232, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+}
+
+.audio-bar {
+  width: 4px;
+  background: var(--primary);
+  border-radius: 2px;
+  animation: audioPulse 1.2s infinite ease-in-out alternate;
+}
+.audio-bar:nth-child(2) { animation-delay: 0.2s; }
+.audio-bar:nth-child(3) { animation-delay: 0.4s; }
+.audio-bar:nth-child(4) { animation-delay: 0.1s; }
+.audio-bar:nth-child(5) { animation-delay: 0.3s; }
+.audio-bar:nth-child(6) { animation-delay: 0.5s; }
+
+@keyframes audioPulse {
+  0% { height: 6px; }
+  100% { height: 22px; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+</style>
+
+{% endblock %}
+{% block extra_scripts %}
+<script>
+// Set call time
+const now = new Date();
+document.getElementById('call-time').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+// Transition from Connecting to Doctor feed after 2.5 seconds
+setTimeout(() => {
+  document.getElementById('connecting-overlay').style.display = 'none';
+  document.getElementById('doctor-feed').style.display = 'block';
+  
+  // Add initial greeting from the doctor in chat
+  addMessage('doctor', "Hello! I am reviewing your retinal scans now. Let's inspect the Grad-CAM highlight on your left eye.");
+}, 2500);
+
+function toggleAudio(btn) {
+  if (btn.classList.contains('active')) {
+    btn.classList.remove('active');
+    btn.textContent = '🎙️';
+    btn.style.backgroundColor = 'transparent';
+    btn.style.color = 'var(--text)';
+  } else {
+    btn.classList.add('active');
+    btn.textContent = '🔇';
+    btn.style.backgroundColor = '#fee2e2';
+    btn.style.color = '#dc2626';
+  }
+}
+
+function toggleVideo(btn) {
+  if (btn.classList.contains('active')) {
+    btn.classList.remove('active');
+    btn.textContent = '📹';
+    btn.style.backgroundColor = 'transparent';
+    btn.style.color = 'var(--text)';
+  } else {
+    btn.classList.add('active');
+    btn.textContent = '🚫';
+    btn.style.backgroundColor = '#fee2e2';
+    btn.style.color = '#dc2626';
+  }
+}
+
+function shareScreen() {
+  alert("Simulating screen sharing: Your RetinaScan AI screening report is now visible on the specialist's medical console.");
+  addMessage('system', "Patient shared retinal report dashboard.");
+}
+
+function addMessage(sender, text) {
+  const container = document.getElementById('chat-messages');
+  const msgWrap = document.createElement('div');
+  msgWrap.style.display = 'flex';
+  msgWrap.style.flexDirection = 'column';
+  
+  if (sender === 'system') {
+    msgWrap.style.alignItems = 'center';
+    msgWrap.innerHTML = `<span style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">${text}</span>`;
+  } else {
+    const isDoctor = sender === 'doctor';
+    msgWrap.style.alignItems = isDoctor ? 'flex-start' : 'flex-end';
+    
+    const senderName = isDoctor ? '{{ doctor.name }}' : 'You';
+    const bubbleBg = isDoctor ? '#f1f5f9' : 'var(--primary)';
+    const bubbleColor = isDoctor ? 'var(--text)' : 'white';
+    
+    msgWrap.innerHTML = `
+      <small style="color:var(--text-muted); font-size:0.72rem; margin-bottom:1px; margin-left:4px; margin-right:4px;">${senderName}</small>
+      <div style="background:${bubbleBg}; color:${bubbleColor}; padding:0.6rem 0.85rem; border-radius:10px; max-width:85%; line-height:1.4; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+        ${text}
+      </div>
+    `;
+  }
+  
+  container.appendChild(msgWrap);
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  addMessage('patient', text);
+  input.value = '';
+  
+  // Trigger simulated Doctor reply after 2 seconds
+  setTimeout(() => {
+    let reply = "I understand. Let's arrange a comprehensive visual examination next week. I will log this recommendation to your hospital dossier.";
+    if (text.toLowerCase().includes('blur') || text.toLowerCase().includes('see') || text.toLowerCase().includes('vision')) {
+      reply = "Blurred vision can occur due to capillary swelling or macular changes. The AI highlighted these key regions. We should monitor this closely.";
+    } else if (text.toLowerCase().includes('glaucoma') || text.toLowerCase().includes('pressure')) {
+      reply = "Our AI detected possible cup enlargement. I recommend checking intraocular pressure (IOP) to rule out early glaucoma.";
+    } else if (text.toLowerCase().includes('amd') || text.toLowerCase().includes('macula')) {
+      reply = "Macular degeneration leads to central vision changes. Are you experiencing any distortion when looking at grid lines?";
+    }
+    addMessage('doctor', reply);
+  }, 2000);
+}
+</script>
+{% endblock %}

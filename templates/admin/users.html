@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-users" style="color:var(--neon-cyan);"></i> Patient Database</h1>
+  <p>{{ users|length }} registered patient profiles under observation</p>
+</div>
+
+<div class="card">
+  <h3><i class="fa-solid fa-table" style="color:var(--neon-purple);"></i> Patient Registry</h3>
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Email</th><th>Total Scans</th><th>Registered Date</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>#{{ user.id }}</td>
+          <td><strong>{{ user.name }}</strong></td>
+          <td>{{ user.email }}</td>
+          <td><span style="font-family:'Orbitron',sans-serif; font-weight:600; color:var(--neon-cyan);">{{ user.scans|length }}</span></td>
+          <td>{{ user.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <span class="status-pill {{ 'status-processed' if user.is_active else 'status-error' }}">
+              {{ 'Active' if user.is_active else 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('toggle_user', user_id=user.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-sm {% if user.is_active %}btn-outline{% else %}btn-primary{% endif %}" style="font-size:0.75rem; padding: 0.25rem 0.6rem;">
+                {% if user.is_active %}
+                  <i class="fa-solid fa-user-slash"></i> Deactivate
+                {% else %}
+                  <i class="fa-solid fa-user-check"></i> Activate
+                {% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

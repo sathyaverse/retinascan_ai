@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('history') }} — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-clock-rotate-left" style="color:var(--neon-cyan);"></i> {{ t('history') }}</h1>
+  <p>Track your longitudinal diagnostic trends and chronological scanning records</p>
+  <a href="{{ url_for('upload') }}" class="btn btn-primary" style="margin-top: 1rem;"><i class="fa-solid fa-plus"></i> {{ t('new_scan') }}</a>
+</div>
+
+<div class="dashboard-grid" style="margin-bottom: 2rem;">
+  <!-- Trend Chart Card -->
+  <div class="card" style="grid-column: span 2;">
+    <h3><i class="fa-solid fa-chart-line" style="color:var(--neon-cyan);"></i> AI Disease Risk Progression Trends</h3>
+    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+      Tracks probability percentages across successive screenings to monitor stability or identify clinical progression.
+    </p>
+    <div style="position: relative; height: 320px; width: 100%;">
+      <canvas id="historyTrendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Progression Comparison Engine -->
+  <div class="card" style="grid-column: span 2;">
+    <h3><i class="fa-solid fa-code-compare" style="color:var(--neon-purple);"></i> Retinal Progression Comparison Engine</h3>
+    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem;">Select any two historical examinations to compare retinal morphology, explainability heatmaps, and diagnostic deltas side-by-side.</p>
+    
+    <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-bottom:1.5rem;">
+      <div style="flex:1; min-width:200px;">
+        <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.35rem;">Select Baseline Scan</label>
+        <select id="compareA" style="background:#0a0f24; border:1px solid var(--border-glass); color:white; padding:0.5rem; border-radius:8px; width:100%; cursor:pointer;">
+          {% for scan in scans %}
+            <option value="{{ scan.id }}" data-obj="{{ scan.to_dict()|tojson|forceescape }}">Scan #{{ scan.id }} - {{ scan.created_at.strftime('%d %b %Y') }} ({{ scan.eye_side }} Eye)</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex:1; min-width:200px;">
+        <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.35rem;">Select Comparison Scan</label>
+        <select id="compareB" style="background:#0a0f24; border:1px solid var(--border-glass); color:white; padding:0.5rem; border-radius:8px; width:100%; cursor:pointer;">
+          {% for scan in scans %}
+            <option value="{{ scan.id }}" data-obj="{{ scan.to_dict()|tojson|forceescape }}" {% if loop.index == 2 %}selected{% endif %}>Scan #{{ scan.id }} - {{ scan.created_at.strftime('%d %b %Y') }} ({{ scan.eye_side }} Eye)</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="align-self:flex-end;">
+        <button type="button" onclick="runComparison()" class="btn btn-primary" style="padding:0.55rem 1.5rem;"><i class="fa-solid fa-play"></i> Run Delta Check</button>
+      </div>
+    </div>
+
+    <!-- Side-by-Side Render Area -->
+    <div id="compareView" style="display:none; margin-top:2rem; border-top:1px solid var(--border-glass); padding-top:2rem;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
+        
+        <!-- Scan A Column -->
+        <div id="panelA" class="card" style="margin:0; background:rgba(255,255,255,0.01);">
+          <h4 id="panelTitleA" style="color:var(--neon-cyan); margin-bottom:1rem;">Scan A</h4>
+          <div style="position:relative; width:100%; border-radius:8px; border:1px solid var(--border-glass); overflow:hidden; aspect-ratio:1.2; background:#000;">
+            <img id="imgA" src="" style="width:100%; height:100%; object-fit:contain;"/>
+          </div>
+          <div style="margin-top:1rem; font-size:0.85rem; display:flex; flex-direction:column; gap:0.4rem;">
+            <div>Diagnosis: <strong id="diagA" style="color:white;">-</strong></div>
+            <div>Certainty: <strong id="confA" style="color:white;">-</strong></div>
+            <div>DR Risk: <strong id="drRiskA" style="color:white;">-</strong></div>
+          </div>
+        </div>
+
+        <!-- Scan B Column -->
+        <div id="panelB" class="card" style="margin:0; background:rgba(255,255,255,0.01);">
+          <h4 id="panelTitleB" style="color:var(--neon-purple); margin-bottom:1rem;">Scan B</h4>
+          <div style="position:relative; width:100%; border-radius:8px; border:1px solid var(--border-glass); overflow:hidden; aspect-ratio:1.2; background:#000;">
+            <img id="imgB" src="" style="width:100%; height:100%; object-fit:contain;"/>
+          </div>
+          <div style="margin-top:1rem; font-size:0.85rem; display:flex; flex-direction:column; gap:0.4rem;">
+            <div>Diagnosis: <strong id="diagB" style="color:white;">-</strong></div>
+            <div>Certainty: <strong id="confB" style="color:white;">-</strong></div>
+            <div>DR Risk: <strong id="drRiskB" style="color:white;">-</strong></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Comparative Delta Report Card -->
+      <div class="card" style="margin-top:2rem; border-color:var(--neon-green); background:rgba(0,255,102,0.02); overflow:visible;">
+        <h4><i class="fa-solid fa-wave-square" style="color:var(--neon-green);"></i> Progression Telemetry Analysis</h4>
+        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;">Computed changes in risk scores between selected diagnostic dates:</p>
+        <div id="deltaResults" style="font-size:0.9rem; font-family:monospace; line-height:1.6; color:white;">
+          <!-- Telemetry details injected by runComparison() -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3><i class="fa-solid fa-timeline" style="color:var(--neon-purple);"></i> Diagnostics Timeline</h3>
+  {% if scans %}
+  
+  <div class="timeline">
+    {% for scan in scans %}
+    <div class="timeline-item">
+      <div class="timeline-badge" style="border-color: {% if scan.is_normal %}var(--neon-green){% else %}var(--neon-pink){% endif %}; box-shadow: 0 0 8px {% if scan.is_normal %}var(--neon-green){% else %}var(--neon-pink){% endif %};"></div>
+      <div class="timeline-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;">
+          <span style="font-size:0.85rem; color:var(--text-secondary);">
+            <i class="fa-regular fa-calendar"></i> <strong>{{ scan.created_at.strftime('%d %b %Y') }}</strong> &nbsp;|&nbsp; <i class="fa-regular fa-clock"></i> {{ scan.created_at.strftime('%I:%M %p') }}
+          </span>
+          <div style="display:flex; gap:0.5rem;">
+            <span class="status-pill status-{% if scan.his_sync_status == 'synced' %}processed{% else %}pending{% endif %}" style="font-size:0.7rem; padding: 0.15rem 0.5rem;">
+              FHIR: {{ scan.his_sync_status.upper() }}
+            </span>
+            <a href="{{ url_for('results', scan_id=scan.id) }}" class="link" style="font-size:0.85rem;"><i class="fa-solid fa-arrow-up-right-from-square"></i> {{ t('view') }}</a>
+          </div>
+        </div>
+        
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; align-items:center;">
+          <div>
+            <span style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Target Eye</span>
+            <strong style="color:white;"><i class="fa-solid fa-eye"></i> {{ t('left_eye') if scan.eye_side == 'Left' else (t('right_eye') if scan.eye_side == 'Right' else scan.eye_side) }}</strong>
+          </div>
+          <div>
+            <span style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">AI Diagnostics</span>
+            {% if scan.is_normal %}
+              <span class="badge badge-no-dr">{{ t('normal') }}</span>
+            {% else %}
+              <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                {% if scan.is_dr %}<span class="badge badge-severe-dr">{{ t('dr') }}: {{ scan.predicted_class }}</span>{% endif %}
+                {% if scan.is_glaucoma %}<span class="badge badge-severe-dr">{{ t('glaucoma') }}</span>{% endif %}
+                {% if scan.is_amd %}<span class="badge badge-severe-dr">{{ t('amd') }}</span>{% endif %}
+              </div>
+            {% endif %}
+          </div>
+          <div>
+            <span style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Risk Profile</span>
+            <div style="font-size: 0.82rem; color:var(--text-secondary); font-family:monospace; font-weight:600;">
+              DR: {{ (scan.dr_prob * 100)|round(1) }}% | Glaucoma: {{ (scan.glaucoma_prob * 100)|round(1) }}% | AMD: {{ (scan.amd_prob * 100)|round(1) }}%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <p>{{ t('no_scans') }}</p>
+    <a href="{{ url_for('upload') }}" class="btn btn-primary"><i class="fa-solid fa-file-arrow-up"></i> {{ t('upload') }}</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const trends = {{ trend_data | safe }};
+const ctx = document.getElementById('historyTrendChart');
+
+if (ctx && trends.dates && trends.dates.length > 0) {
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: trends.dates,
+      datasets: [
+        {
+          label: 'Diabetic Retinopathy (DR) %',
+          data: trends.dr,
+          borderColor: '#ff007a',
+          backgroundColor: 'rgba(255, 0, 122, 0.04)',
+          borderWidth: 2.5,
+          tension: 0.25,
+          fill: true,
+          pointBackgroundColor: '#ff007a',
+          pointBorderColor: 'rgba(255, 255, 255, 0.8)',
+          pointHoverRadius: 6
+        },
+        {
+          label: 'Glaucoma %',
+          data: trends.glaucoma,
+          borderColor: '#00f0ff',
+          backgroundColor: 'rgba(0, 240, 255, 0.04)',
+          borderWidth: 2.5,
+          tension: 0.25,
+          fill: true,
+          pointBackgroundColor: '#00f0ff',
+          pointBorderColor: 'rgba(255, 255, 255, 0.8)',
+          pointHoverRadius: 6
+        },
+        {
+          label: 'Age-Related Macular Degeneration (AMD) %',
+          data: trends.amd,
+          borderColor: '#ff7a00',
+          backgroundColor: 'rgba(255, 122, 0, 0.04)',
+          borderWidth: 2.5,
+          tension: 0.25,
+          fill: true,
+          pointBackgroundColor: '#ff7a00',
+          pointBorderColor: 'rgba(255, 255, 255, 0.8)',
+          pointHoverRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            color: '#9ca3af',
+            font: { family: 'Space Grotesk', size: 11 }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#9ca3af', font: { family: 'Space Grotesk' } }
+        },
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: {
+            color: '#9ca3af',
+            font: { family: 'Space Grotesk' },
+            callback: v => v + '%'
+          }
+        }
+      }
+    }
+  });
+} else if (ctx) {
+  ctx.parentElement.innerHTML = '<div class="empty-state"><p>Insufficient historical examinations log files. Screening history trends require multiple scans logged.</p></div>';
+}
+
+function runComparison() {
+  const selA = document.getElementById('compareA');
+  const selB = document.getElementById('compareB');
+  if (!selA || !selB || selA.selectedIndex === -1 || selB.selectedIndex === -1) {
+    alert("Please select two examinations to run comparison.");
+    return;
+  }
+  if (selA.value === selB.value) {
+    alert("Please select two different examinations to compare progression.");
+    return;
+  }
+
+  const optA = selA.options[selA.selectedIndex];
+  const optB = selB.options[selB.selectedIndex];
+  
+  if (!optA || !optB || !optA.getAttribute('data-obj') || !optB.getAttribute('data-obj')) {
+    alert("Diagnostic data for the selected scans is unavailable.");
+    return;
+  }
+  
+  const scanA = JSON.parse(optA.getAttribute('data-obj'));
+  const scanB = JSON.parse(optB.getAttribute('data-obj'));
+  
+  document.getElementById('compareView').style.display = 'block';
+  
+  document.getElementById('panelTitleA').innerText = `Baseline Scan #${scanA.id} (${scanA.created_at})`;
+  document.getElementById('imgA').src = (scanA.original_image && scanA.original_image.toLowerCase().endsWith('.pdf')) ? '/static/uploads/pdf_placeholder.svg' : `/static/uploads/` + scanA.original_image;
+  document.getElementById('diagA').innerText = scanA.predicted_class || 'N/A';
+  document.getElementById('confA').innerText = `${scanA.confidence || 0.0}%`;
+  document.getElementById('drRiskA').innerText = `${scanA.dr_prob || 0.0}%`;
+  
+  document.getElementById('panelTitleB').innerText = `Comparison Scan #${scanB.id} (${scanB.created_at})`;
+  document.getElementById('imgB').src = (scanB.original_image && scanB.original_image.toLowerCase().endsWith('.pdf')) ? '/static/uploads/pdf_placeholder.svg' : `/static/uploads/` + scanB.original_image;
+  document.getElementById('diagB').innerText = scanB.predicted_class || 'N/A';
+  document.getElementById('confB').innerText = `${scanB.confidence || 0.0}%`;
+  document.getElementById('drRiskB').innerText = `${scanB.dr_prob || 0.0}%`;
+  
+  const drDelta = (scanB.dr_prob || 0.0) - (scanA.dr_prob || 0.0);
+  const glaucomaDelta = (scanB.glaucoma_prob || 0.0) - (scanA.glaucoma_prob || 0.0);
+  const amdDelta = (scanB.amd_prob || 0.0) - (scanA.amd_prob || 0.0);
+  
+  const formatDelta = (val) => {
+    if (val > 0) return `<span style="color:var(--neon-pink); font-weight:700;">+${val.toFixed(1)}% (Increased Risk)</span>`;
+    if (val < 0) return `<span style="color:var(--neon-green); font-weight:700;">${val.toFixed(1)}% (Decreased Risk)</span>`;
+    return `<span style="color:var(--text-secondary);">No Change</span>`;
+  };
+  
+  document.getElementById('deltaResults').innerHTML = `
+    &bull; Diabetic Retinopathy Risk Delta: ${formatDelta(drDelta)}<br/>
+    &bull; Glaucoma Risk Delta: ${formatDelta(glaucomaDelta)}<br/>
+    &bull; Age-Related Macular Degeneration Delta: ${formatDelta(amdDelta)}<br/>
+    &bull; Morphological delta checks suggest that anomalies are: <strong>${drDelta > 2.0 ? 'PROGRESSING' : 'STABLE'}</strong>.
+  `;
+}
+</script>
+{% endblock %}

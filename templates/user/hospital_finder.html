@@ -1,0 +1,637 @@
+{% extends 'base.html' %}
+{% block title %}Nearby Eye Hospital Finder — RetinaScan AI{% endblock %}
+{% block extra_head %}
+<!-- Include OrbitControls for Three.js navigation -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+  .finder-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 340px;
+    gap: 1.5rem;
+    height: calc(100vh - 200px);
+    min-height: 550px;
+  }
+  .map-container {
+    position: relative;
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    background: #03050c;
+    overflow: hidden;
+    height: 100%;
+  }
+  #three-canvas-container {
+    width: 100%;
+    height: 100%;
+  }
+  .hologram-overlay {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    pointer-events: none;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px var(--neon-cyan);
+  }
+  .clinic-sidebar-item {
+    background: rgba(255,255,255,0.01);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .clinic-sidebar-item:hover, .clinic-sidebar-item.active {
+    border-color: var(--neon-cyan);
+    background: rgba(0, 242, 254, 0.03);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.1);
+  }
+  
+  /* Responsive formatting */
+  @media (max-width: 1100px) {
+    .finder-layout {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+    .map-container {
+      height: 400px;
+    }
+  }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="page-header" style="margin-bottom: 1.5rem;">
+  <h1><i class="fa-solid fa-map-location-dot" style="color:var(--neon-cyan);"></i> Nearby Eye Hospital Finder</h1>
+  <p>Interactive 3D geospatial clinic telemetry showing live capacity, queue delays, and specialist slots</p>
+</div>
+
+<div class="finder-layout">
+  
+  <!-- Left Side: Clinic Sidebar -->
+  <div class="card" style="margin:0; padding:1.25rem; display:flex; flex-direction:column; justify-content:space-between; height: 100%; box-sizing: border-box; overflow-y:auto;">
+    <div>
+      <h3 style="margin-top:0; font-size:1rem; border-bottom:1px solid var(--border-glass); padding-bottom:0.5rem;"><i class="fa-solid fa-list-check"></i> Clinics Directory</h3>
+      
+      <!-- District & Search filter row -->
+      <div style="margin: 1rem 0; display:flex; flex-direction:column; gap:0.75rem;">
+        <div>
+          <label for="districtSelect" style="display:block; font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.25rem;"><i class="fa-solid fa-map-location-dot" style="color:var(--neon-cyan);"></i> Select District</label>
+          <select id="districtSelect" onchange="changeDistrict(this.value)" style="width:100%; padding:0.6rem; background:rgba(6,9,19,0.9); border:1px solid var(--border-glass); border-radius:6px; color:white; outline:none; font-size:0.8rem; cursor:pointer;">
+            <option value="all">All Districts</option>
+          </select>
+        </div>
+        <div>
+          <input type="text" id="clinicSearch" placeholder="Search clinics..." oninput="filterClinics(this.value)" style="width:100%; padding:0.6rem; background:rgba(0,0,0,0.2); border:1px solid var(--border-glass); border-radius:6px; color:white; outline:none; font-size:0.8rem; box-sizing:border-box;"/>
+        </div>
+      </div>
+
+      
+      <!-- List Items -->
+      <div id="clinicsList">
+        {% for data in hospital_data %}
+        <div class="clinic-sidebar-item {% if loop.first %}active{% endif %}" id="item-{{ data.hospital.id }}" onclick="selectClinic({{ data.hospital.id }}, true)">
+          <h4 style="margin:0 0 0.25rem 0; font-size:0.92rem; color:white;">{{ data.hospital.name }}</h4>
+          <div style="font-size:0.75rem; color:var(--text-secondary); display:flex; justify-content:space-between;">
+            <span>{{ data.distance }} km away</span>
+            <span style="color:var(--neon-green);">{{ data.wait_time }}m wait</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    
+    <div style="font-size:0.72rem; color:var(--text-secondary); border-top:1px solid var(--border-glass); padding-top:0.75rem; text-align:center;">
+      <i class="fa-solid fa-satellite-dish fa-fade"></i> Secure link: hospital HIS databases active
+    </div>
+  </div>
+
+  <!-- Center: 3D Holographic Map -->
+  <div class="map-container">
+    <div id="three-canvas-container"></div>
+    <div class="hologram-overlay">
+      <i class="fa-solid fa-satellite fa-fade"></i> SYSTEM GEOLOCATION ACTIVE
+      <div style="font-size:0.68rem; font-family:monospace; margin-top:0.25rem; font-weight:400; color:var(--text-secondary);">LAT: 13.0827 | LON: 80.2707</div>
+    </div>
+    
+    <!-- Controls Overlay -->
+    <div style="position: absolute; bottom: 1rem; left: 1rem; pointer-events: auto; display: flex; gap: 0.5rem;">
+      <button class="btn btn-sm btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="resetCamera()"><i class="fa-solid fa-arrows-to-eye"></i> Reset View</button>
+      <button class="btn btn-sm btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="toggleRadar()"><i class="fa-solid fa-circle-dot"></i> Toggle Radar</button>
+    </div>
+  </div>
+
+  <!-- Right Side: Details Card -->
+  <div class="card" style="margin:0; padding:1.25rem; display:flex; flex-direction:column; justify-content:space-between; height: 100%; box-sizing: border-box; overflow-y:auto;">
+    <div>
+      <h3 style="margin-top:0; font-size:1.05rem; border-bottom:1px solid var(--border-glass); padding-bottom:0.5rem;" id="detailsName">Clinic Telemetry</h3>
+      
+      <!-- Telemetry Info -->
+      <div style="margin: 1.25rem 0; display:flex; flex-direction:column; gap:1.25rem;">
+        
+        <!-- Distance / Location -->
+        <div>
+          <span style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:0.25rem;">Geographic Location</span>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:white; font-size:0.88rem;" id="detailsAddress">Loading...</strong>
+            <span id="detailsDistance" style="font-size:0.82rem; font-family:'Orbitron',sans-serif; color:var(--neon-cyan); background:rgba(0,242,254,0.05); padding:0.15rem 0.4rem; border-radius:4px;">0.0 km</span>
+          </div>
+        </div>
+
+        <!-- Clinic Load / Capacity bar -->
+        <div>
+          <span style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:0.25rem;">Clinic Load Capacity</span>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+            <strong style="color:white; font-size:0.88rem;" id="detailsCapacityText">0/0 Slots Occupied</strong>
+            <span id="detailsCapacityPercent" style="font-family:'Orbitron',sans-serif; font-size:0.82rem; color:var(--neon-green);">0%</span>
+          </div>
+          <div class="confidence-bar" style="height:8px;">
+            <div class="confidence-fill" id="detailsCapacityFill" style="width:0%; background:var(--neon-green);"></div>
+          </div>
+        </div>
+
+        <!-- Wait time -->
+        <div>
+          <span style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:0.25rem;">Est. Queue Delay</span>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <div style="font-size:2rem; font-family:'Orbitron',sans-serif; font-weight:800; color:white;" id="detailsWaitTime">--</div>
+            <div>
+              <strong style="color:var(--neon-green); font-size:0.75rem; display:block;">MINUTES WAIT</strong>
+              <span style="font-size:0.68rem; color:var(--text-secondary);">Direct admissions open</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Available Slots -->
+        <div>
+          <span style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:0.25rem;">Active Specialist Slots</span>
+          <div style="display:flex; align-items:center; gap:0.5rem; background:rgba(255,255,255,0.01); border:1px solid var(--border-glass); padding:0.6rem 0.8rem; border-radius:6px;">
+            <div style="font-size:1.5rem; color:var(--neon-cyan); font-family:'Orbitron',sans-serif;" id="detailsSlots">0</div>
+            <div style="font-size:0.75rem; color:var(--text-secondary);">
+              Specialists online and accepting appointments today
+            </div>
+          </div>
+        </div>
+
+        <!-- Specialties Tags -->
+        <div>
+          <span style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:0.4rem;">Specialty Services</span>
+          <div id="detailsSpecialties" style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+            <!-- Injected -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Booking Actions -->
+    <div style="display:flex; flex-direction:column; gap:0.5rem; border-top:1px solid var(--border-glass); padding-top:1rem;">
+      <a href="{{ url_for('book_appointment') }}" class="btn btn-primary btn-full"><i class="fa-solid fa-calendar-check"></i> Book Visual Consultation</a>
+      <a href="{{ url_for('telemedicine', scan_id=1) }}" class="btn btn-outline btn-full"><i class="fa-solid fa-video"></i> Start Virtual Clinic Bridge</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Three.js Geolocation Engine Script -->
+<script>
+  // Data injected from backend
+
+  
+  // Fix template formatting typo if any
+  const clinics = [
+    {% for data in hospital_data %}
+    {
+      id: {{ data.hospital.id }},
+      name: "{{ data.hospital.name }}",
+      address: "{{ data.hospital.address }}, {{ data.hospital.city }}",
+      lat: {{ data.hospital.latitude or 13.08 }},
+      lon: {{ data.hospital.longitude or 80.27 }},
+      capacity: {{ data.capacity }},
+      wait_time: {{ data.wait_time }},
+      slots_open: {{ data.slots_open }},
+      distance: {{ data.distance }},
+      specialties: {{ data.specialties | tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  let selectedClinicId = clinics[0].id;
+  let scene, camera, renderer, controls;
+  let beacons = [];
+  let radarMesh;
+  let showRadar = true;
+
+  // Initialize Three.js Geospatial City Scene
+  function initThree() {
+    const container = document.getElementById('three-canvas-container');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    // Calculate dynamic center of all loaded clinics
+    let avgLat = 0, avgLon = 0;
+    clinics.forEach(c => {
+      avgLat += c.lat;
+      avgLon += c.lon;
+    });
+    if (clinics.length > 0) {
+      avgLat /= clinics.length;
+      avgLon /= clinics.length;
+    } else {
+      avgLat = 13.08;
+      avgLon = 80.27;
+    }
+
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color('#03050c');
+    scene.fog = new THREE.FogExp2('#03050c', 0.015);
+
+    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(0, 45, 60);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2.1; // Don't go below ground
+    controls.minDistance = 15;
+    controls.maxDistance = 120;
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight('#1d243a', 1.5);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight('#00f2fe', 2.0);
+    dirLight.position.set(20, 40, 20);
+    scene.add(dirLight);
+
+    // Grid Floor
+    const gridHelper = new THREE.GridHelper(150, 60, '#00f2fe', '#0f172a');
+    gridHelper.position.y = -0.5;
+    scene.add(gridHelper);
+
+    // City structures simulation (Holographic translucent boxes)
+    const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
+    // Draw 80 buildings
+    for (let i = 0; i < 90; i++) {
+      const bHeight = Math.random() * 8 + 2;
+      const bMat = new THREE.MeshBasicMaterial({
+        color: '#07122b',
+        wireframe: true,
+        transparent: true,
+        opacity: 0.15
+      });
+      const building = new THREE.Mesh(buildingGeo, bMat);
+      building.scale.set(Math.random() * 4 + 2, bHeight, Math.random() * 4 + 2);
+      
+      // Position randomly around grid, avoiding center
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 50 + 10;
+      building.position.set(Math.cos(angle) * radius, bHeight / 2 - 0.5, Math.sin(angle) * radius);
+      scene.add(building);
+    }
+
+    // Geolocation beacons representing hospitals
+    clinics.forEach((c, index) => {
+      // Map latitude & longitude delta to coordinates relative to dynamic center
+      const latScale = (c.lat - avgLat) * 350;
+      const lonScale = (c.lon - avgLon) * 350;
+      
+      // Keep inside coordinate range
+      const x = THREE.MathUtils.clamp(lonScale, -45, 45);
+      const z = THREE.MathUtils.clamp(-latScale, -45, 45);
+      const y = 0;
+
+
+      // Pulse Column
+      const colGeo = new THREE.CylinderGeometry(0.35, 0.35, 12, 16);
+      const colMat = new THREE.MeshBasicMaterial({
+        color: index === 0 ? '#00ff66' : '#00f2fe',
+        transparent: true,
+        opacity: 0.65
+      });
+      const col = new THREE.Mesh(colGeo, colMat);
+      col.position.set(x, 6, z);
+      scene.add(col);
+
+      // Glowing indicator ring at base
+      const ringGeo = new THREE.RingGeometry(0.1, 4, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: index === 0 ? '#00ff66' : '#00f2fe',
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.15
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(x, 0.05, z);
+      scene.add(ring);
+
+      // Pulse sphere on top of column
+      const sphereGeo = new THREE.SphereGeometry(1.2, 16, 16);
+      const sphereMat = new THREE.MeshBasicMaterial({
+        color: index === 0 ? '#00ff66' : '#00f2fe',
+        wireframe: true
+      });
+      const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+      sphere.position.set(x, 12, z);
+      scene.add(sphere);
+
+      // Keep references to animate sphere pulses
+      beacons.push({
+        id: c.id,
+        sphere: sphere,
+        ring: ring,
+        col: col,
+        baseColor: index === 0 ? '#00ff66' : '#00f2fe'
+      });
+    });
+
+    // Radar Scanning Plane
+    const radarGeo = new THREE.RingGeometry(0.1, 80, 64);
+    const radarMat = new THREE.MeshBasicMaterial({
+      color: '#00f2fe',
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.03
+    });
+    radarMesh = new THREE.Mesh(radarGeo, radarMat);
+    radarMesh.rotation.x = Math.PI / 2;
+    radarMesh.position.y = 0.1;
+    scene.add(radarMesh);
+
+    // Window resize handler
+    window.addEventListener('resize', onWindowResize);
+
+    // Start animation loop
+    animate();
+  }
+
+  function onWindowResize() {
+    const container = document.getElementById('three-canvas-container');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+  }
+
+  // Animation ticks
+  let clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const time = clock.getElapsedTime();
+
+    // Rotate spheres
+    beacons.forEach(b => {
+      b.sphere.rotation.y = time * 0.8;
+      b.sphere.rotation.x = time * 0.4;
+      
+      // Scaling pulse animation
+      const pulseFactor = Math.sin(time * 5 + b.id) * 0.15 + 1.0;
+      b.sphere.scale.set(pulseFactor, pulseFactor, pulseFactor);
+      
+      // Animate rings
+      b.ring.scale.set(Math.sin(time * 2 + b.id) * 0.3 + 1.2, Math.sin(time * 2 + b.id) * 0.3 + 1.2, 1);
+    });
+
+    // Rotate radar plane sweeps
+    if (showRadar && radarMesh) {
+      radarMesh.scale.set(Math.sin(time * 0.5) * 0.4 + 0.6, Math.sin(time * 0.5) * 0.4 + 0.6, 1);
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  // Camera Controls
+  function resetCamera() {
+    controls.reset();
+    camera.position.set(0, 45, 60);
+  }
+
+  function toggleRadar() {
+    showRadar = !showRadar;
+    radarMesh.visible = showRadar;
+  }
+
+  // Sidebar interaction
+  function selectClinic(id, focusCamera = true) {
+    selectedClinicId = id;
+    
+    // Update active item in sidebar list
+    clinics.forEach(c => {
+      const item = document.getElementById(`item-${c.id}`);
+      if (item) {
+        if (c.id === id) item.classList.add('active');
+        else item.classList.remove('active');
+      }
+    });
+
+    const c = clinics.find(x => x.id === id);
+    if (!c) return;
+
+    // Highlight beacon color in 3D
+    beacons.forEach(b => {
+      const isSel = b.id === id;
+      b.sphere.material.color.set(isSel ? '#ff007a' : b.baseColor);
+      b.col.material.color.set(isSel ? '#ff007a' : b.baseColor);
+      b.ring.material.color.set(isSel ? '#ff007a' : b.baseColor);
+      
+      // Focus camera target if requested
+      if (isSel && focusCamera) {
+        const targetPos = new THREE.Vector3(b.sphere.position.x, 0, b.sphere.position.z);
+        
+        // Tween controls target smoothly
+        new Promise(resolve => {
+          controls.target.copy(targetPos);
+          resolve();
+        });
+      }
+    });
+
+    // Update Details panel fields
+    document.getElementById('detailsName').innerText = c.name;
+    document.getElementById('detailsAddress').innerText = c.address;
+    document.getElementById('detailsDistance').innerText = c.distance + " km";
+    
+    // Capacity Load values
+    document.getElementById('detailsCapacityText').innerText = `${c.capacity}% occupied`;
+    document.getElementById('detailsCapacityPercent').innerText = c.capacity + "%";
+    
+    const fill = document.getElementById('detailsCapacityFill');
+    fill.style.width = c.capacity + "%";
+    
+    // Change load color from green to orange/red based on load
+    if (c.capacity >= 85) {
+      fill.style.background = 'var(--neon-pink)';
+      document.getElementById('detailsCapacityPercent').style.color = 'var(--neon-pink)';
+    } else if (c.capacity >= 70) {
+      fill.style.background = 'var(--neon-orange)';
+      document.getElementById('detailsCapacityPercent').style.color = 'var(--neon-orange)';
+    } else {
+      fill.style.background = 'var(--neon-green)';
+      document.getElementById('detailsCapacityPercent').style.color = 'var(--neon-green)';
+    }
+
+    // Wait Time ETA
+    document.getElementById('detailsWaitTime').innerText = c.wait_time;
+
+    // Slots
+    document.getElementById('detailsSlots').innerText = c.slots_open;
+
+    // Specialties
+    const specBox = document.getElementById('detailsSpecialties');
+    specBox.innerHTML = "";
+    c.specialties.forEach(spec => {
+      const pill = document.createElement('span');
+      pill.className = "badge badge-no-dr";
+      pill.style.fontSize = "0.7rem";
+      pill.style.background = "rgba(0, 242, 254, 0.05)";
+      pill.style.color = "var(--neon-cyan)";
+      pill.style.borderColor = "var(--neon-cyan)";
+      pill.innerText = spec;
+      specBox.appendChild(pill);
+    });
+  }
+
+  let activeDistrict = 'all';
+
+  function changeDistrict(district) {
+    activeDistrict = district;
+    
+    // Filter list of clinics in sidebar
+    clinics.forEach(c => {
+      const item = document.getElementById(`item-${c.id}`);
+      if (item) {
+        const matchesDistrict = (district === 'all' || c.city.toLowerCase() === district.toLowerCase());
+        item.style.display = matchesDistrict ? 'block' : 'none';
+      }
+    });
+
+    // Rebuild/re-center 3D beacons
+    rebuildMapForDistrict(district);
+  }
+
+  function rebuildMapForDistrict(district) {
+    let filtered = clinics;
+    if (district !== 'all') {
+      filtered = clinics.filter(c => c.city.toLowerCase() === district.toLowerCase());
+    }
+
+    // Calculate new dynamic center
+    let avgLat = 0, avgLon = 0;
+    filtered.forEach(c => {
+      avgLat += c.lat;
+      avgLon += c.lon;
+    });
+    if (filtered.length > 0) {
+      avgLat /= filtered.length;
+      avgLon /= filtered.length;
+    } else {
+      avgLat = 13.08;
+      avgLon = 80.27;
+    }
+
+    // Clear old beacons from WebGL scene
+    beacons.forEach(b => {
+      scene.remove(b.sphere);
+      scene.remove(b.ring);
+      scene.remove(b.col);
+    });
+    beacons = [];
+
+    // Redraw beacons relative to new center
+    filtered.forEach((c, index) => {
+      const latScale = (c.lat - avgLat) * 350;
+      const lonScale = (c.lon - avgLon) * 350;
+      
+      const x = THREE.MathUtils.clamp(lonScale, -45, 45);
+      const z = THREE.MathUtils.clamp(-latScale, -45, 45);
+
+      const colGeo = new THREE.CylinderGeometry(0.35, 0.35, 12, 16);
+      const colMat = new THREE.MeshBasicMaterial({
+        color: index === 0 ? '#00ff66' : '#00f2fe',
+        transparent: true,
+        opacity: 0.65
+      });
+      const col = new THREE.Mesh(colGeo, colMat);
+      col.position.set(x, 6, z);
+      scene.add(col);
+
+      const ringGeo = new THREE.RingGeometry(0.1, 4, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: index === 0 ? '#00ff66' : '#00f2fe',
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.15
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(x, 0.05, z);
+      scene.add(ring);
+
+      const sphereGeo = new THREE.SphereGeometry(1.2, 16, 16);
+      const sphereMat = new THREE.MeshBasicMaterial({
+        color: index === 0 ? '#00ff66' : '#00f2fe',
+        wireframe: true
+      });
+      const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+      sphere.position.set(x, 12, z);
+      scene.add(sphere);
+
+      beacons.push({
+        id: c.id,
+        sphere: sphere,
+        ring: ring,
+        col: col,
+        baseColor: index === 0 ? '#00ff66' : '#00f2fe'
+      });
+    });
+
+    // Reset camera target
+    controls.target.set(0, 0, 0);
+
+    // Update details pane
+    if (filtered.length > 0) {
+      selectClinic(filtered[0].id, false);
+    }
+  }
+
+  function filterClinics(query) {
+    const q = query.toLowerCase().trim();
+    clinics.forEach(c => {
+      const item = document.getElementById(`item-${c.id}`);
+      if (item) {
+        const matchesDistrict = (activeDistrict === 'all' || c.city.toLowerCase() === activeDistrict.toLowerCase());
+        const matchesQuery = (c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q));
+        item.style.display = (matchesDistrict && matchesQuery) ? 'block' : 'none';
+      }
+    });
+  }
+
+  // Run on page load
+  window.addEventListener('load', () => {
+    // Populate districts dropdown dynamically
+    const distSelect = document.getElementById('districtSelect');
+    const uniqueCities = [...new Set(clinics.map(c => c.city))].sort();
+    uniqueCities.forEach(city => {
+      const opt = document.createElement('option');
+      opt.value = city;
+      opt.innerText = city;
+      distSelect.appendChild(opt);
+    });
+
+    initThree();
+    selectClinic(clinics[0].id, false);
+  });
+
+</script>
+
+{% endblock %}

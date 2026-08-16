@@ -1,0 +1,1218 @@
+{% extends 'base.html' %}
+{% block title %}Secure Portal Login — RetinaScan AI{% endblock %}
+{% block content %}
+<style>
+  /* ── Overrides for global base.html components ── */
+  .navbar, .footer {
+    display: none !important;
+  }
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    background: #030511 !important;
+  }
+  body {
+    overflow-x: hidden !important;
+    background: #030511 !important;
+  }
+  @media (min-height: 750px) {
+    body {
+      overflow: hidden !important;
+    }
+  }
+
+  /* ── Layout and container styling ── */
+  .login-fullscreen-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at 30% 30%, #070e28 0%, #030511 80%);
+    font-family: 'Inter', sans-serif;
+    color: #f3f4f6;
+    overflow: hidden;
+  }
+  
+  .login-container {
+    width: 100%;
+    max-width: 1350px;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 4rem;
+    z-index: 10;
+    align-items: center;
+  }
+
+  /* ── Ambient Effects ── */
+  .digital-waves {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 35vh;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.7;
+  }
+  .digital-waves svg {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .particle-ambient-layer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+  
+  .light-streaks {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .streak {
+    position: absolute;
+    width: 150px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
+    opacity: 0.15;
+    transform: rotate(-35deg);
+    animation: streakMove 10s infinite linear;
+  }
+  .streak-1 { top: 10%; left: -10%; animation-delay: 0s; animation-duration: 7s; }
+  .streak-2 { top: 40%; left: -10%; animation-delay: 3s; animation-duration: 11s; }
+  .streak-3 { top: 70%; left: -10%; animation-delay: 5.5s; animation-duration: 9s; }
+
+  @keyframes streakMove {
+    0% { transform: translate(-20%, -20%) rotate(-35deg); opacity: 0; }
+    15% { opacity: 0.5; }
+    85% { opacity: 0.5; }
+    100% { transform: translate(120vw, 120vh) rotate(-35deg); opacity: 0; }
+  }
+
+  /* ── Left Column (HUD + Doctor) ── */
+  .column-visual {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    min-height: 550px;
+  }
+  
+  .hud-center-wrapper {
+    position: relative;
+    width: 440px;
+    height: 440px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+  }
+
+  .doctor-img-container {
+    position: relative;
+    width: 310px;
+    height: 310px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid rgba(0, 240, 255, 0.2);
+    box-shadow: 0 0 50px rgba(0, 240, 255, 0.3), inset 0 0 30px rgba(0, 240, 255, 0.25);
+    z-index: 5;
+    background: rgba(4, 7, 20, 0.85);
+  }
+  
+  .doctor-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    mix-blend-mode: normal;
+  }
+
+  /* Concentric HUD Rings */
+  .hud-circle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    transition: border-color 0.4s ease;
+  }
+  .ring-outer {
+    width: 420px;
+    height: 420px;
+    border: 2px dashed rgba(0, 240, 255, 0.2);
+    animation: rotateCW 35s infinite linear;
+  }
+  .ring-middle {
+    width: 375px;
+    height: 375px;
+    border: 1px solid rgba(189, 0, 255, 0.15);
+    border-left: 3px solid var(--neon-purple);
+    border-right: 3px solid var(--neon-cyan);
+    animation: rotateCCW 20s infinite linear;
+  }
+  .ring-inner {
+    width: 338px;
+    height: 338px;
+    border: 1px dashed rgba(0, 240, 255, 0.1);
+    border-top: 2px solid var(--neon-cyan);
+    animation: rotateCW 14s infinite linear;
+  }
+
+  @keyframes rotateCW {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes rotateCCW {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+  }
+
+  /* Laser line animation */
+  .scan-laser {
+    position: absolute;
+    width: 310px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    box-shadow: 0 0 14px var(--neon-cyan), 0 0 4px var(--neon-cyan);
+    z-index: 6;
+    animation: laserScan 5s infinite ease-in-out;
+    pointer-events: none;
+    opacity: 0.85;
+  }
+  @keyframes laserScan {
+    0% { top: 65px; }
+    50% { top: 375px; }
+    100% { top: 65px; }
+  }
+
+  /* ── Floating dashboard widgets ── */
+  .floating-dashboard-widget {
+    position: absolute;
+    background: rgba(8, 14, 38, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 0.85rem 1.1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.02);
+    pointer-events: auto;
+    z-index: 8;
+    transition: all 0.3s ease;
+  }
+  .floating-dashboard-widget:hover {
+    border-color: rgba(0, 240, 255, 0.25);
+    box-shadow: 0 12px 35px rgba(0, 240, 255, 0.12), 0 10px 30px rgba(0, 0, 0, 0.4);
+    transform: translateY(-3px);
+  }
+
+  .widget-telemetry {
+    top: 4%;
+    left: -2%;
+    width: 255px;
+    font-family: 'Orbitron', sans-serif;
+  }
+  .widget-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.5rem;
+    letter-spacing: 1px;
+  }
+  .telemetry-lines {
+    font-size: 0.68rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .telemetry-lines div {
+    display: flex;
+    justify-content: space-between;
+  }
+  .telemetry-lines .lbl {
+    color: var(--text-secondary);
+  }
+  .telemetry-lines .val {
+    font-weight: 600;
+  }
+
+  .widget-accuracy {
+    bottom: 4%;
+    left: 2%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.1rem;
+  }
+  .radial-gauge-wrapper {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .radial-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .gauge-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.05);
+    stroke-width: 4;
+  }
+  .gauge-fill {
+    fill: none;
+    stroke: var(--neon-cyan);
+    stroke-width: 4;
+    stroke-linecap: round;
+    animation: fillGauge 2s ease-out forwards;
+  }
+  @keyframes fillGauge {
+    from { stroke-dasharray: 0, 100; }
+  }
+  .gauge-text {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .widget-accuracy .gauge-text {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .widget-accuracy .gauge-text .num {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--neon-cyan);
+    font-family: 'Orbitron', sans-serif;
+    line-height: 1;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  }
+  .widget-accuracy .gauge-text .lbl {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-top: 0.15rem;
+  }
+
+  .widget-ecg {
+    top: 12%;
+    right: -4%;
+    width: 220px;
+    padding: 0.75rem 1rem;
+  }
+  .ecg-widget-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.4rem;
+  }
+  .ecg-container {
+    width: 100%;
+    height: 38px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+  }
+  .ecg-svg {
+    width: 100%;
+    height: 100%;
+  }
+  .ecg-path {
+    stroke: var(--neon-pink);
+    stroke-width: 1.5;
+    fill: none;
+    stroke-dasharray: 400;
+    stroke-dashoffset: 400;
+    animation: drawECG 4s infinite linear;
+  }
+  @keyframes drawECG {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .widget-history-chart {
+    bottom: 8%;
+    right: -6%;
+    width: 220px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .chart-header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .mini-bar-chart {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 55px;
+    padding-top: 5px;
+  }
+  .bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 12%;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .bar-fill {
+    width: 100%;
+    background: linear-gradient(to top, var(--neon-purple), var(--neon-cyan));
+    border-radius: 2px;
+    animation: growBar 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transform-origin: bottom;
+    box-shadow: 0 0 5px rgba(0, 240, 255, 0.15);
+  }
+  @keyframes growBar {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+  }
+  .bar-lbl {
+    font-size: 0.55rem;
+    color: var(--text-secondary);
+    margin-top: 0.35rem;
+  }
+
+  /* ── Right Column (Login Card wrapper) ── */
+  .column-card {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .premium-card-glow-accent {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.12) 0%, transparent 65%);
+    filter: blur(55px);
+    z-index: 1;
+    pointer-events: none;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    transition: background 0.6s ease;
+  }
+  
+  .auth-card-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 445px;
+    z-index: 5;
+  }
+
+  /* Brand Header styling */
+  .brand-logo-container {
+    text-align: center;
+    margin-bottom: 1.25rem;
+  }
+  .brand-logo-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(189, 0, 255, 0.08));
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    font-size: 1.5rem;
+    color: var(--neon-cyan);
+    margin-bottom: 0.5rem;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+    transition: all 0.5s ease;
+  }
+  .icon-pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--neon-cyan);
+    animation: logoPulse 2s infinite ease-out;
+    pointer-events: none;
+    transition: border-color 0.5s ease;
+  }
+  @keyframes logoPulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.35); opacity: 0; }
+  }
+  
+  .brand-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 0.75px;
+    margin: 0;
+  }
+  .brand-title span {
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  }
+  .brand-subtitle {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 0.2rem;
+    font-weight: 600;
+  }
+
+  /* Frosted Glass login card */
+  .premium-login-card {
+    background: rgba(10, 16, 38, 0.45);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(0, 240, 255, 0.12);
+    border-radius: 16px;
+    padding: 2.25rem 2rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), inset 0 0 25px rgba(0, 240, 255, 0.01);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+  }
+  .premium-login-card:hover {
+    box-shadow: 0 25px 60px rgba(0, 240, 255, 0.05), 0 20px 50px rgba(0, 0, 0, 0.55);
+  }
+
+  /* Role Selection Tabs */
+  .role-selector-container {
+    display: flex;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.25rem;
+    margin-bottom: 1.5rem;
+    justify-content: space-between;
+    gap: 0.25rem;
+  }
+  .role-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.5rem;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .role-tab:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  
+  /* Active Roles specific coloring */
+  .role-tab#tab-patient.active {
+    background: rgba(0, 255, 102, 0.12) !important;
+    color: var(--neon-green) !important;
+    box-shadow: 0 0 8px rgba(0, 255, 102, 0.08);
+  }
+  .role-tab#tab-doctor.active {
+    background: rgba(0, 242, 254, 0.12) !important;
+    color: var(--neon-cyan) !important;
+    box-shadow: 0 0 8px rgba(0, 242, 254, 0.08);
+  }
+  .role-tab#tab-admin.active {
+    background: rgba(189, 0, 255, 0.12) !important;
+    color: var(--neon-purple) !important;
+    box-shadow: 0 0 8px rgba(189, 0, 255, 0.08);
+  }
+
+  .portal-header-info {
+    margin-bottom: 1.25rem;
+    min-height: 60px;
+  }
+  .portal-header-info h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.2rem;
+  }
+  .portal-header-info p {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  /* Form Elements */
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+  
+  .custom-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .custom-input-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-transform: uppercase;
+  }
+  
+  .input-wrapper {
+    position: relative;
+    width: 100%;
+  }
+  .input-wrapper input {
+    width: 100%;
+    padding: 0.72rem 1rem;
+    padding-right: 2.5rem;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    color: white;
+    font-size: 0.88rem;
+    transition: all 0.3s ease;
+  }
+  .input-wrapper input:focus {
+    outline: none;
+    background: rgba(0, 0, 0, 0.35);
+  }
+  
+  /* Focus line animation */
+  .focus-glow-line {
+    position: absolute;
+    bottom: 0; left: 50%;
+    width: 0; height: 2px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .input-wrapper input:focus ~ .focus-glow-line {
+    width: 100%;
+  }
+  
+  .btn-toggle-password {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+  .btn-toggle-password:hover {
+    color: white;
+  }
+
+  .form-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+  }
+  
+  /* Checkbox styling */
+  .checkbox-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-left: 1.65rem;
+    cursor: pointer;
+    user-select: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0; width: 0;
+  }
+  .checkmark {
+    position: absolute;
+    top: 50%; left: 0;
+    transform: translateY(-50%);
+    height: 15px; width: 15px;
+    background-color: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .checkbox-container input:checked ~ .checkmark {
+    background-color: var(--neon-cyan);
+    border-color: var(--neon-cyan);
+  }
+  .checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+  }
+  .checkbox-container input:checked ~ .checkmark:after {
+    display: block;
+  }
+  .checkbox-container .checkmark:after {
+    left: 5px; top: 1px;
+    width: 3px; height: 7px;
+    border: solid #030614;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .forgot-link {
+    text-decoration: none;
+    font-weight: 600;
+    transition: text-shadow 0.2s, color 0.2s;
+  }
+  .forgot-link:hover {
+    color: white;
+  }
+
+  /* Premium Submit Button */
+  .btn-submit-premium {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    padding: 0.8rem;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    border: none;
+    border-radius: 8px;
+    color: #030614;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0, 240, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+  }
+  .btn-submit-premium::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: all 0.6s ease;
+  }
+  .btn-submit-premium:hover::before {
+    left: 100%;
+  }
+  .btn-submit-premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(0, 240, 255, 0.35);
+  }
+  .btn-submit-premium:active {
+    transform: translateY(0);
+  }
+
+  .card-footer-links {
+    text-align: center;
+    margin-top: 1.25rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+  }
+  .card-footer-links a {
+    text-decoration: none;
+    transition: text-shadow 0.2s;
+  }
+
+  /* Quick Login Hints */
+  .quick-login-hints {
+    margin-top: 1.25rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .hint-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .hint-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .hint-btn {
+    flex: 1;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 5px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .hint-btn:hover {
+    color: white;
+    background: rgba(255,255,255,0.05);
+  }
+  .hint-btn.fill-patient:hover { border-color: var(--neon-green); color: var(--neon-green); }
+  .hint-btn.fill-doctor:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+  .hint-btn.fill-admin:hover { border-color: var(--neon-purple); color: var(--neon-purple); }
+
+  /* Float message overlay fix */
+  .flash-container {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 10000;
+    max-width: 320px;
+  }
+
+  /* ── Responsive rules ── */
+  @media (max-width: 990px) {
+    .login-container {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      max-width: 520px;
+      padding: 1.5rem;
+    }
+    .column-visual {
+      display: none;
+    }
+    .premium-card-glow-accent {
+      width: 100%;
+    }
+    body {
+      overflow: auto !important;
+    }
+  }
+</style>
+
+<div class="login-fullscreen-wrapper">
+  <!-- Interactive background particles -->
+  <div class="particle-ambient-layer" id="ambient-particles"></div>
+  
+  <!-- Ambient light streaks -->
+  <div class="light-streaks">
+    <div class="streak streak-1"></div>
+    <div class="streak streak-2"></div>
+    <div class="streak streak-3"></div>
+  </div>
+  
+  <!-- Digital waves background SVG -->
+  <div class="digital-waves">
+    <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+      <path fill="rgba(0, 240, 255, 0.03)" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,122.7C960,117,1056,171,1152,192C1248,213,1344,203,1392,197.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+      <path fill="rgba(189, 0, 255, 0.02)" d="M0,192L48,181.3C96,171,192,149,288,160C384,171,480,213,576,213.3C672,213,768,171,864,144C960,117,1056,107,1152,122.7C1248,139,1344,181,1392,202.7L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+    </svg>
+  </div>
+
+  <div class="login-container">
+    <!-- Left Column (HUD + Doctor Visualization) -->
+    <div class="column-visual">
+      <!-- Animated Retinal Target HUD -->
+      <div class="hud-center-wrapper">
+        <div class="hud-circle ring-outer" id="hud-ring-1"></div>
+        <div class="hud-circle ring-middle" id="hud-ring-2"></div>
+        <div class="hud-circle ring-inner" id="hud-ring-3"></div>
+        <div class="scan-laser"></div>
+        
+        <!-- Doctor visualization image -->
+        <div class="doctor-img-container">
+          <img src="{{ url_for('static', filename='images/doctor_retina.png') }}" alt="Doctor analyzing retinal scan data" class="doctor-image" onerror="this.src='https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600&auto=format&fit=crop'">
+        </div>
+      </div>
+      
+      <!-- Overlaid Widgets / Metrics -->
+      <div class="floating-dashboard-widget widget-telemetry">
+        <div class="widget-header">
+          <i class="fa-solid fa-network-wired text-cyan"></i>
+          <span>CNN METRICS TELEMETRY</span>
+        </div>
+        <div class="telemetry-lines">
+          <div><span class="lbl">MODEL STAGE:</span> <span class="val text-green">5-CLASSIFIER</span></div>
+          <div><span class="lbl">SENSITIVITY:</span> <span class="val text-cyan">98.7%</span></div>
+          <div><span class="lbl">SPECIFICITY:</span> <span class="val text-cyan">99.1%</span></div>
+          <div><span class="lbl">GRAD-CAM RESOLUTION:</span> <span class="val text-purple">512px</span></div>
+        </div>
+      </div>
+      
+      <div class="floating-dashboard-widget widget-accuracy">
+        <div class="radial-gauge-wrapper">
+          <svg class="radial-svg" viewBox="0 0 36 36">
+            <path class="gauge-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path class="gauge-fill" stroke-dasharray="99.4, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          </svg>
+        </div>
+        <div class="gauge-text">
+          <span class="num">99.4%</span>
+          <span class="lbl">AUC ACCURACY</span>
+        </div>
+      </div>
+      
+      <div class="floating-dashboard-widget widget-ecg">
+        <div class="ecg-widget-title">
+          <i class="fa-solid fa-heart-pulse text-pink"></i> LIVE ANALYTIC HEARTBEAT
+        </div>
+        <!-- Live ECG Line -->
+        <div class="ecg-container">
+          <svg class="ecg-svg" viewBox="0 0 300 40" preserveAspectRatio="none">
+            <path class="ecg-path" d="M0,20 L60,20 L70,20 L75,10 L80,30 L85,20 L95,20 L105,20 L110,20 L115,5 L120,35 L125,20 L135,20 L150,20 L210,20 L220,20 L225,10 L230,30 L235,20 L245,20 L255,20 L260,20 L265,5 L270,35 L275,20 L285,20 L300,20" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="floating-dashboard-widget widget-history-chart">
+        <div class="chart-header">
+          <i class="fa-solid fa-chart-line text-cyan"></i> HISTORICAL SCAN VOLUMES
+        </div>
+        <div class="mini-bar-chart">
+          <div class="bar-col"><div class="bar-fill" style="height: 40%"></div><span class="bar-lbl">JAN</span></div>
+          <div class="bar-col"><div class="bar-fill" style="height: 60%"></div><span class="bar-lbl">FEB</span></div>
+          <div class="bar-col"><div class="bar-fill" style="height: 50%"></div><span class="bar-lbl">MAR</span></div>
+          <div class="bar-col"><div class="bar-fill" style="height: 85%"></div><span class="bar-lbl">APR</span></div>
+          <div class="bar-col"><div class="bar-fill" style="height: 70%"></div><span class="bar-lbl">MAY</span></div>
+          <div class="bar-col"><div class="bar-fill" style="height: 100%"></div><span class="bar-lbl">JUN</span></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right Column (Glassmorphism Login Card) -->
+    <div class="column-card">
+      <!-- Glow canvas background helper -->
+      <div class="premium-card-glow-accent" id="card-glow-back"></div>
+      
+      <div class="auth-card-wrapper">
+        <!-- Brand logo header -->
+        <div class="brand-logo-container">
+          <div class="brand-logo-icon" id="brand-logo-glow">
+            <i class="fa-solid fa-eye-dropper"></i>
+            <span class="icon-pulse" id="brand-pulse-glow"></span>
+          </div>
+          <h1 class="brand-title">RetinaScan <span>AI</span></h1>
+          <p class="brand-subtitle">Diabetic Retinopathy Detection Platform</p>
+        </div>
+        
+        <!-- Login Card content -->
+        <div class="premium-login-card" id="main-login-card" style="border-color: rgba(0, 255, 102, 0.25); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 25px rgba(0, 255, 102, 0.15);">
+          <!-- Role Selector -->
+          <div class="role-selector-container">
+            <button type="button" onclick="selectPortal('patient', false)" id="tab-patient" class="role-tab active">
+              <i class="fa-solid fa-hospital-user"></i> Patient
+            </button>
+            <button type="button" onclick="selectPortal('doctor', false)" id="tab-doctor" class="role-tab">
+              <i class="fa-solid fa-user-doctor"></i> Doctor
+            </button>
+            <button type="button" onclick="selectPortal('admin', false)" id="tab-admin" class="role-tab">
+              <i class="fa-solid fa-user-shield"></i> Admin
+            </button>
+          </div>
+          
+          <div class="portal-header-info">
+            <h2 id="portal-title" style="color: var(--neon-green);">Patient Secure Portal</h2>
+            <p id="portal-desc">Access your retinal examination records and AI diagnostic summaries.</p>
+          </div>
+          
+          <form method="POST" action="{{ url_for('login') }}" class="login-form">
+            <div class="custom-input-group">
+              <label for="email"><i class="fa-regular fa-envelope text-cyan" id="email-icon"></i> Email Address</label>
+              <div class="input-wrapper">
+                <input type="email" id="email" name="email" required placeholder="name@domain.com">
+                <span class="focus-glow-line" id="email-glow-line"></span>
+              </div>
+            </div>
+            
+            <div class="custom-input-group">
+              <label for="password"><i class="fa-solid fa-lock text-cyan" id="password-icon"></i> Password</label>
+              <div class="input-wrapper">
+                <input type="password" id="password" name="password" required placeholder="••••••••">
+                <span class="focus-glow-line" id="password-glow-line"></span>
+                <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility()" title="Toggle password visibility">
+                  <i class="fa-solid fa-eye" id="password-eye-icon"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="form-actions-row">
+              <label class="checkbox-container">
+                <input type="checkbox" name="remember" checked>
+                <span class="checkmark" id="checkbox-checkmark"></span>
+                Remember me
+              </label>
+              <a href="#" class="forgot-link text-cyan" id="forgot-link-btn">Forgot Password?</a>
+            </div>
+            
+            <button type="submit" class="btn-submit-premium" id="btn-login" style="background: linear-gradient(135deg, var(--neon-green), #00a3ff); box-shadow: 0 5px 15px rgba(0, 255, 102, 0.25);">
+              <span class="btn-text">Log In to System</span>
+              <i class="fa-solid fa-right-to-bracket"></i>
+            </button>
+          </form>
+          
+          <div class="card-footer-links">
+            <p>New to RetinaScan AI? <a href="{{ url_for('register') }}" class="link" id="register-link-btn" style="color: var(--neon-green);">Create an Account</a></p>
+          </div>
+        </div>
+        
+        <!-- Demo Logins buttons -->
+        <div class="quick-login-hints">
+          <span class="hint-title"><i class="fa-solid fa-key"></i> Quick Demo Logins:</span>
+          <div class="hint-buttons">
+            <button onclick="fillAndSubmit('patient@retinascan.com', 'Patient@1234', 'patient')" class="hint-btn fill-patient" style="border-color: rgba(0, 255, 102, 0.15); color: var(--neon-green);">Patient</button>
+            <button onclick="fillAndSubmit('doctor@retinascan.com', 'Doctor@1234', 'doctor')" class="hint-btn fill-doctor" style="border-color: rgba(0, 240, 255, 0.15); color: var(--neon-cyan);">Doctor</button>
+            <button onclick="fillAndSubmit('admin@retinascan.com', 'Admin@1234', 'admin')" class="hint-btn fill-admin" style="border-color: rgba(189, 0, 255, 0.15); color: var(--neon-purple);">Admin</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Generate floating particle ambient effects
+  const particleLayer = document.getElementById('ambient-particles');
+  if (particleLayer) {
+    for (let i = 0; i < 24; i++) {
+      const p = document.createElement('div');
+      p.style.position = 'absolute';
+      const size = Math.random() * 6 + 3;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      // Randomly cyan, purple, or green
+      const rand = Math.random();
+      p.style.background = rand < 0.4 ? 'var(--neon-cyan)' : (rand < 0.75 ? 'var(--neon-purple)' : 'var(--neon-green)');
+      p.style.borderRadius = '50%';
+      p.style.opacity = Math.random() * 0.2 + 0.05;
+      p.style.top = Math.random() * 100 + 'vh';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.pointerEvents = 'none';
+      
+      // Floating animation
+      p.animate([
+        { transform: 'translate(0, 0)' },
+        { transform: `translate(${(Math.random() - 0.5) * 200}px, ${(Math.random() - 0.5) * 200}px)` }
+      ], {
+        duration: Math.random() * 12000 + 10000,
+        iterations: Infinity,
+        direction: 'alternate',
+        easing: 'ease-in-out'
+      });
+      particleLayer.appendChild(p);
+    }
+  }
+
+  // Initial role configuration setup
+  selectPortal('patient', false);
+});
+
+// Toggle password text visibility
+function togglePasswordVisibility() {
+  const pwdInput = document.getElementById('password');
+  const eyeIcon = document.getElementById('password-eye-icon');
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    eyeIcon.className = 'fa-solid fa-eye-slash';
+  } else {
+    pwdInput.type = 'password';
+    eyeIcon.className = 'fa-solid fa-eye';
+  }
+}
+
+// Fill fields and submit form directly (convenience helper)
+function fillAndSubmit(email, password, role) {
+  selectPortal(role, true);
+  setTimeout(() => {
+    document.getElementById('email').value = email;
+    document.getElementById('password').value = password;
+    // Highlight the card temporarily
+    const card = document.getElementById('main-login-card');
+    card.style.transform = 'scale(1.02)';
+    setTimeout(() => {
+      document.querySelector('.login-form').submit();
+    }, 400);
+  }, 100);
+}
+
+// Dynamic portal select UI styling modifier
+function selectPortal(role, autofill = false) {
+  // Reset tabs
+  document.querySelectorAll('.role-tab').forEach(tab => tab.classList.remove('active'));
+  document.getElementById('tab-' + role).classList.add('active');
+
+  const card = document.getElementById('main-login-card');
+  const glow = document.getElementById('card-glow-back');
+  const title = document.getElementById('portal-title');
+  const desc = document.getElementById('portal-desc');
+  const btn = document.getElementById('btn-login');
+  
+  // Icon and links theme changes
+  const emailIcon = document.getElementById('email-icon');
+  const pwdIcon = document.getElementById('password-icon');
+  const checkmark = document.getElementById('checkbox-checkmark');
+  const forgotBtn = document.getElementById('forgot-link-btn');
+  const registerBtn = document.getElementById('register-link-btn');
+  const brandLogo = document.getElementById('brand-logo-glow');
+  const brandPulse = document.getElementById('brand-pulse-glow');
+  const emailLine = document.getElementById('email-glow-line');
+  const pwdLine = document.getElementById('password-glow-line');
+  
+  // HUD Ring overrides depending on portal selection
+  const r1 = document.getElementById('hud-ring-1');
+  const r2 = document.getElementById('hud-ring-2');
+  const r3 = document.getElementById('hud-ring-3');
+
+  if (role === 'patient') {
+    // Theme colors: Green
+    card.style.borderColor = 'rgba(0, 255, 102, 0.25)';
+    card.style.boxShadow = '0 20px 50px rgba(0, 0, 0, 0.55), 0 0 25px rgba(0, 255, 102, 0.15)';
+    glow.style.background = 'radial-gradient(circle, rgba(0, 255, 102, 0.12) 0%, transparent 65%)';
+    
+    title.innerText = 'Patient Secure Portal';
+    title.style.color = 'var(--neon-green)';
+    desc.innerText = 'Access your retinal examination records and AI diagnostic summaries.';
+    
+    btn.style.background = 'linear-gradient(135deg, var(--neon-green), #00a3ff)';
+    btn.style.boxShadow = '0 5px 15px rgba(0, 255, 102, 0.2)';
+    
+    // Elements coloring
+    emailIcon.className = 'fa-regular fa-envelope text-green';
+    pwdIcon.className = 'fa-solid fa-lock text-green';
+    checkmark.style.borderColor = 'rgba(0, 255, 102, 0.3)';
+    forgotBtn.className = 'forgot-link text-green';
+    registerBtn.className = 'link';
+    registerBtn.style.color = 'var(--neon-green)';
+    brandLogo.style.borderColor = 'rgba(0, 255, 102, 0.3)';
+    brandLogo.style.color = 'var(--neon-green)';
+    brandPulse.style.borderColor = 'var(--neon-green)';
+    emailLine.style.background = 'linear-gradient(90deg, var(--neon-green), var(--neon-cyan))';
+    pwdLine.style.background = 'linear-gradient(90deg, var(--neon-green), var(--neon-cyan))';
+    
+    if (r1) r1.style.borderColor = 'rgba(0, 255, 102, 0.2)';
+    if (r3) r3.style.borderColor = 'rgba(0, 255, 102, 0.1)';
+    if (r3) r3.style.borderTopColor = 'var(--neon-green)';
+
+    if (autofill) {
+      document.getElementById('email').value = 'patient@retinascan.com';
+      document.getElementById('password').value = 'Patient@1234';
+    }
+
+  } else if (role === 'doctor') {
+    // Theme colors: Cyan
+    card.style.borderColor = 'rgba(0, 240, 255, 0.25)';
+    card.style.boxShadow = '0 20px 50px rgba(0, 0, 0, 0.55), 0 0 25px rgba(0, 240, 255, 0.15)';
+    glow.style.background = 'radial-gradient(circle, rgba(0, 240, 255, 0.12) 0%, transparent 65%)';
+    
+    title.innerText = 'Ophthalmologist Secure Portal';
+    title.style.color = 'var(--neon-cyan)';
+    desc.innerText = 'Access pending scan queues, clinical diagnostic charts, and sync reports.';
+    
+    btn.style.background = 'linear-gradient(135deg, var(--neon-cyan), var(--neon-purple))';
+    btn.style.boxShadow = '0 5px 15px rgba(0, 240, 255, 0.2)';
+    
+    emailIcon.className = 'fa-regular fa-envelope text-cyan';
+    pwdIcon.className = 'fa-solid fa-lock text-cyan';
+    checkmark.style.borderColor = 'rgba(0, 240, 255, 0.3)';
+    forgotBtn.className = 'forgot-link text-cyan';
+    registerBtn.className = 'link';
+    registerBtn.style.color = 'var(--neon-cyan)';
+    brandLogo.style.borderColor = 'rgba(0, 240, 255, 0.3)';
+    brandLogo.style.color = 'var(--neon-cyan)';
+    brandPulse.style.borderColor = 'var(--neon-cyan)';
+    emailLine.style.background = 'linear-gradient(90deg, var(--neon-cyan), var(--neon-purple))';
+    pwdLine.style.background = 'linear-gradient(90deg, var(--neon-cyan), var(--neon-purple))';
+    
+    if (r1) r1.style.borderColor = 'rgba(0, 240, 255, 0.2)';
+    if (r3) r3.style.borderColor = 'rgba(0, 240, 255, 0.1)';
+    if (r3) r3.style.borderTopColor = 'var(--neon-cyan)';
+
+    if (autofill) {
+      document.getElementById('email').value = 'doctor@retinascan.com';
+      document.getElementById('password').value = 'Doctor@1234';
+    }
+
+  } else if (role === 'admin') {
+    // Theme colors: Purple
+    card.style.borderColor = 'rgba(189, 0, 255, 0.25)';
+    card.style.boxShadow = '0 20px 50px rgba(0, 0, 0, 0.55), 0 0 25px rgba(189, 0, 255, 0.15)';
+    glow.style.background = 'radial-gradient(circle, rgba(189, 0, 255, 0.12) 0%, transparent 65%)';
+    
+    title.innerText = 'Administrator Control Panel';
+    title.style.color = 'var(--neon-purple)';
+    desc.innerText = 'Configure model settings, manage user privileges, and view audit transaction logs.';
+    
+    btn.style.background = 'linear-gradient(135deg, var(--neon-purple), var(--neon-pink))';
+    btn.style.boxShadow = '0 5px 15px rgba(189, 0, 255, 0.2)';
+    
+    emailIcon.className = 'fa-regular fa-envelope text-purple';
+    pwdIcon.className = 'fa-solid fa-lock text-purple';
+    checkmark.style.borderColor = 'rgba(189, 0, 255, 0.3)';
+    forgotBtn.className = 'forgot-link text-purple';
+    registerBtn.className = 'link';
+    registerBtn.style.color = 'var(--neon-purple)';
+    brandLogo.style.borderColor = 'rgba(189, 0, 255, 0.3)';
+    brandLogo.style.color = 'var(--neon-purple)';
+    brandPulse.style.borderColor = 'var(--neon-purple)';
+    emailLine.style.background = 'linear-gradient(90deg, var(--neon-purple), var(--neon-pink))';
+    pwdLine.style.background = 'linear-gradient(90deg, var(--neon-purple), var(--neon-pink))';
+    
+    if (r1) r1.style.borderColor = 'rgba(189, 0, 255, 0.2)';
+    if (r3) r3.style.borderColor = 'rgba(189, 0, 255, 0.1)';
+    if (r3) r3.style.borderTopColor = 'var(--neon-purple)';
+
+    if (autofill) {
+      document.getElementById('email').value = 'admin@retinascan.com';
+      document.getElementById('password').value = 'Admin@1234';
+    }
+  }
+}
+</script>
+{% endblock %}

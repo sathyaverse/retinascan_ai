@@ -1,0 +1,1849 @@
+{% extends 'base.html' %}
+{% block title %}Create Account — RetinaScan AI{% endblock %}
+
+{% block extra_head %}
+<!-- Modern Sci-Fi typography from Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Core variables matching the mock palette ── */
+  :root {
+    --neon-cyan: #00f0ff;
+    --neon-purple: #bd00ff;
+    --neon-pink: #ff007f;
+    --neon-green: #39ff14;
+    --bg-dark-navy: #030511;
+    --text-primary: #ffffff;
+    --text-secondary: #8c9bb4;
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --card-bg-glass: rgba(10, 16, 42, 0.55);
+  }
+
+  /* ── Overrides for global base.html components ── */
+  .navbar, .footer {
+    display: none !important;
+  }
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    background: var(--bg-dark-navy) !important;
+  }
+  body {
+    overflow-x: hidden !important;
+    background: var(--bg-dark-navy) !important;
+  }
+
+  /* ── Fullscreen wrapper with deep medical technologies ambient ── */
+  .register-fullscreen-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at 30% 30%, #060b24 0%, var(--bg-dark-navy) 80%);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    overflow: hidden;
+  }
+
+  /* Neural network connecting nodes canvas background */
+  #neural-bg-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.55;
+  }
+
+  .register-main-container {
+    width: 100%;
+    max-width: 1350px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 4rem;
+    z-index: 10;
+    align-items: center;
+    position: relative;
+  }
+
+  /* ── Left Column (Diagnostics HUD + Telemetry Grid) ── */
+  .left-column-hud {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2.2rem;
+  }
+
+  /* Top brand header styling */
+  .hud-brand-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .hud-logo {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(0, 240, 255, 0.05);
+    border: 2px solid var(--neon-cyan);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.35);
+  }
+  .logo-glow-pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 1px solid var(--neon-cyan);
+    animation: logoPulse 2s infinite ease-out;
+    pointer-events: none;
+  }
+  @keyframes logoPulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+  .hud-brand-text h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    margin: 0;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+  }
+  .hud-brand-text p {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+    margin: 0;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  /* Top quick-indicators row */
+  .quick-indicators-panel {
+    display: flex;
+    gap: 0.8rem;
+  }
+  .quick-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.85rem;
+    background: rgba(13, 21, 56, 0.5);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    border-radius: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    box-shadow: inset 0 0 8px rgba(0, 240, 255, 0.03);
+    transition: all 0.3s ease;
+  }
+  .quick-indicator i {
+    color: var(--neon-cyan);
+    font-size: 0.8rem;
+  }
+  .quick-indicator:hover {
+    border-color: var(--neon-cyan);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.15);
+  }
+
+  /* Top Right Hex Badge */
+  .top-hex-medical {
+    position: absolute;
+    right: 5%;
+    top: 0.2rem;
+  }
+  .hex-badge {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    background: rgba(13, 21, 56, 0.6);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: var(--neon-cyan);
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+    animation: floatingHex 4s infinite ease-in-out;
+  }
+  @keyframes floatingHex {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  /* Center Eye HUD design */
+  .center-eye-hud {
+    position: relative;
+    width: 400px;
+    height: 400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .hud-circle-outer {
+    position: absolute;
+    width: 390px;
+    height: 390px;
+    border: 2px dashed rgba(0, 240, 255, 0.18);
+    border-radius: 50%;
+    animation: spinCW 40s infinite linear;
+  }
+  .hud-circle-middle {
+    position: absolute;
+    width: 356px;
+    height: 356px;
+    border: 1.5px solid rgba(189, 0, 255, 0.15);
+    border-left-color: var(--neon-purple);
+    border-right-color: var(--neon-cyan);
+    border-radius: 50%;
+    animation: spinCCW 24s infinite linear;
+  }
+  .hud-circle-inner {
+    position: absolute;
+    width: 326px;
+    height: 326px;
+    border: 2px dotted rgba(0, 240, 255, 0.2);
+    border-radius: 50%;
+    animation: spinCW 16s infinite linear;
+  }
+
+  @keyframes spinCW {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes spinCCW {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+  }
+
+  /* Split Eye Display */
+  .split-eye-display {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid rgba(0, 240, 255, 0.35);
+    box-shadow: 0 0 45px rgba(0, 240, 255, 0.3), inset 0 0 25px rgba(0, 240, 255, 0.15);
+    z-index: 5;
+    background: rgba(3, 5, 18, 0.85);
+  }
+  .eye-half-left {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .eye-half-right {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    overflow: hidden;
+  }
+  #three-eyeball-canvas {
+    width: 300px;
+    height: 300px;
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+  #fundus-canvas {
+    width: 300px;
+    height: 300px;
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+
+  /* Laser scanner scanning effect */
+  .laser-scanner-line {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2.5px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    box-shadow: 0 0 10px var(--neon-cyan), 0 0 3px var(--neon-cyan);
+    z-index: 6;
+    pointer-events: none;
+    animation: verticalLaserSweep 4.5s infinite ease-in-out;
+  }
+  @keyframes verticalLaserSweep {
+    0%, 100% { top: 0%; opacity: 0.1; }
+    10% { opacity: 0.95; }
+    50% { top: 100%; opacity: 0.95; }
+    90% { opacity: 0.95; }
+  }
+
+  /* Telemetry Cards Grid */
+  .telemetry-cards-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 1.25rem;
+  }
+  .telemetry-card {
+    background: var(--card-bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.01);
+    transition: all 0.3s ease;
+  }
+  .telemetry-card:hover {
+    border-color: rgba(0, 240, 255, 0.25);
+    box-shadow: 0 12px 30px rgba(0, 240, 255, 0.1), 0 10px 25px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+  }
+  .telemetry-card .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 0.65rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 0.4rem;
+  }
+  .telemetry-card .card-header i {
+    font-size: 0.8rem;
+  }
+  .card-dot-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 8px var(--neon-cyan);
+    animation: pulseBlink 1.4s infinite;
+    display: inline-block;
+    margin-right: 0.3rem;
+  }
+  @keyframes pulseBlink {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+  .card-value-percent {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--neon-cyan);
+    font-weight: 700;
+  }
+
+  .telemetry-card .card-body {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  .card-left-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0,0,0,0.3);
+  }
+  .card-right-progress {
+    flex: 1;
+  }
+  .progress-bar-bg {
+    width: 100%;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.35rem;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    width: 78%;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+    box-shadow: 0 0 8px var(--neon-cyan);
+    border-radius: 3px;
+  }
+  .progress-status-text {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .telemetry-large-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.2rem;
+  }
+  .telemetry-sub-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+  }
+
+  .card-body-quality {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .quality-score-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+  .quality-chart-container {
+    width: 120px;
+    height: 30px;
+  }
+
+  .card-body-model {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .model-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+  }
+  .model-status {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+  }
+  .model-network-graph {
+    width: 50px;
+    height: 35px;
+  }
+
+  /* Bottom Trust Row */
+  .bottom-trust-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.65rem;
+    margin-top: 0.5rem;
+  }
+  .trust-badge {
+    background: rgba(13, 21, 56, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.6rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.4rem;
+  }
+  .trust-badge i {
+    color: var(--neon-cyan);
+    font-size: 0.85rem;
+    filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.35));
+  }
+  .trust-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .trust-text strong {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.25px;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+  .trust-text span {
+    font-size: 0.52rem;
+    color: var(--text-secondary);
+    line-height: 1.2;
+  }
+
+  /* ── Right Column (Card and far-right HUD Toolbar) ── */
+  .right-column-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .glassmorphism-card-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    z-index: 5;
+    perspective: 1000px;
+  }
+
+  .register-glow-accent {
+    position: absolute;
+    width: 480px;
+    height: 480px;
+    background: radial-gradient(circle, rgba(189, 0, 255, 0.07) 0%, rgba(0, 240, 255, 0.05) 45%, transparent 65%);
+    filter: blur(50px);
+    z-index: 1;
+    pointer-events: none;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .register-glass-card {
+    background: rgba(10, 16, 42, 0.42);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1.5px solid rgba(0, 240, 255, 0.12);
+    border-radius: 20px;
+    padding: 2.25rem 2.25rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(189, 0, 255, 0.08);
+    transform-style: preserve-3d;
+    transition: box-shadow 0.3s, border-color 0.3s;
+  }
+  .register-glass-card:hover {
+    border-color: rgba(189, 0, 255, 0.25);
+    box-shadow: 0 25px 60px rgba(189, 0, 255, 0.12), 0 20px 50px rgba(0, 0, 0, 0.6);
+  }
+
+  /* User icon badge with plus indicator */
+  .user-avatar-badge {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 1.25rem auto;
+  }
+  .avatar-circle {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid var(--neon-purple);
+    background: radial-gradient(circle, rgba(189, 0, 255, 0.2) 0%, rgba(3, 5, 18, 0.9) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: #ffffff;
+    box-shadow: 0 0 20px rgba(189, 0, 255, 0.4);
+    animation: pulseRing 3s infinite ease-in-out;
+  }
+  @keyframes pulseRing {
+    0%, 100% { box-shadow: 0 0 20px rgba(189, 0, 255, 0.4); }
+    50% { box-shadow: 0 0 30px rgba(189, 0, 255, 0.65); transform: scale(1.03); }
+  }
+  .avatar-plus-badge {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--neon-purple);
+    border: 1.5px solid #030511;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  }
+
+  .card-titles {
+    text-align: center;
+    margin-bottom: 1.6rem;
+  }
+  .card-titles h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 0.35rem;
+    letter-spacing: 0.25px;
+  }
+  .card-titles p {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  /* Form and Inputs */
+  .register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .input-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .input-form-group label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    letter-spacing: 0.25px;
+  }
+  .input-form-group label i {
+    color: var(--neon-cyan);
+    font-size: 0.82rem;
+  }
+  .input-inner-wrapper {
+    position: relative;
+    width: 100%;
+  }
+  .input-inner-wrapper input {
+    width: 100%;
+    padding: 0.78rem 1rem 0.78rem 2.6rem;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+  }
+  .input-inner-wrapper input::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+  }
+  .input-inner-wrapper input:focus {
+    outline: none;
+    border-color: rgba(0, 240, 255, 0.5);
+    background: rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+  }
+  .input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    pointer-events: none;
+  }
+  .input-focus-border {
+    position: absolute;
+    bottom: 0; left: 50%;
+    width: 0; height: 2px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .input-inner-wrapper input:focus ~ .input-focus-border {
+    width: 100%;
+  }
+
+  .btn-eye-toggle {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+  }
+  .btn-eye-toggle:hover {
+    color: #ffffff;
+  }
+
+  /* Password strength panel */
+  .password-strength-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: 0.15rem;
+  }
+  .strength-segments {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.3rem;
+  }
+  .strength-segment {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+  .strength-status-text {
+    font-size: 0.66rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  .strength-status-text span {
+    font-weight: 700;
+  }
+
+  /* gradient CTA button */
+  .btn-register-submit {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    padding: 0.85rem;
+    background: linear-gradient(135deg, #0099ff, #bd00ff);
+    border: none;
+    border-radius: 10px;
+    color: #ffffff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(189, 0, 255, 0.25);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+  .btn-register-submit::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    transition: all 0.6s ease;
+  }
+  .btn-register-submit:hover::before {
+    left: 100%;
+  }
+  .btn-register-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(189, 0, 255, 0.45), 0 0 15px rgba(0, 240, 255, 0.2);
+  }
+  .btn-register-submit:active {
+    transform: translateY(0);
+  }
+
+  .or-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 1rem 0;
+    gap: 0.8rem;
+  }
+  .sep-line {
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .sep-text {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+  }
+
+  .card-footer-redirect {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+  .card-footer-redirect a {
+    text-decoration: none;
+    color: var(--neon-cyan);
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .card-footer-redirect a:hover {
+    color: #ffffff;
+    text-shadow: 0 0 8px var(--neon-cyan);
+  }
+
+  /* Floating vertical toolbar HUD on far-right */
+  .floating-hud-toolbar {
+    position: absolute;
+    right: -4.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: 10;
+  }
+  .toolbar-item {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: rgba(13, 21, 56, 0.55);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
+    transition: all 0.3s ease;
+  }
+  .toolbar-item:hover {
+    border-color: var(--neon-cyan);
+    color: #ffffff;
+    box-shadow: 0 0 15px var(--neon-cyan);
+    transform: translateX(3px);
+  }
+  .badge-text-ai {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: var(--neon-cyan);
+  }
+  .holo-globe-animation {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .holo-ring-1, .holo-ring-2, .holo-ring-3 {
+    position: absolute;
+    border: 1px solid var(--neon-cyan);
+    border-radius: 50%;
+    opacity: 0.55;
+  }
+  .holo-ring-1 {
+    width: 22px; height: 10px;
+    transform: rotateX(70deg);
+    animation: rotateHolo 3s infinite linear;
+  }
+  .holo-ring-2 {
+    width: 22px; height: 10px;
+    transform: rotateX(70deg) rotateY(60deg);
+    animation: rotateHolo 4s infinite linear;
+  }
+  .holo-ring-3 {
+    width: 22px; height: 10px;
+    transform: rotateX(70deg) rotateY(-60deg);
+    animation: rotateHolo 5s infinite linear;
+  }
+  @keyframes rotateHolo {
+    from { transform: rotateX(70deg) rotateZ(0deg); }
+    to { transform: rotateX(70deg) rotateZ(360deg); }
+  }
+
+  /* Floating Upload Action Button in Bottom Right */
+  .floating-action-upload {
+    position: fixed;
+    bottom: 2.2rem;
+    right: 2.2rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: #ffffff;
+    box-shadow: 0 4px 15px rgba(0, 240, 255, 0.4);
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-decoration: none;
+  }
+  .floating-action-upload:hover {
+    transform: scale(1.15) rotate(360deg);
+    box-shadow: 0 6px 22px rgba(0, 240, 255, 0.6);
+  }
+
+  /* Ambient mouse glow effect */
+  .mouse-glow {
+    position: absolute;
+    width: 480px;
+    height: 480px;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.05) 0%, rgba(189, 0, 255, 0.04) 35%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    mix-blend-mode: screen;
+    opacity: 0.85;
+  }
+
+  /* ── Responsive rules ── */
+  @media (max-width: 1100px) {
+    .register-main-container {
+      grid-template-columns: 1fr;
+      gap: 3rem;
+      max-width: 520px;
+      padding: 1.5rem;
+    }
+    .left-column-hud {
+      display: none;
+    }
+    .floating-hud-toolbar {
+      display: none;
+    }
+    .right-column-card {
+      justify-content: center;
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="register-fullscreen-wrapper" id="mouse-move-wrapper">
+  <!-- Interactive mouse glow tracking -->
+  <div class="mouse-glow" id="custom-mouse-glow"></div>
+
+  <!-- Full screen neural nodes canvas -->
+  <canvas id="neural-bg-canvas"></canvas>
+
+  <div class="register-main-container">
+    
+    <!-- LEFT SIDE: EYE DIAGNOSTICS HUD & TELEMETRY -->
+    <div class="left-column-hud">
+      
+      <!-- Top header branding -->
+      <div class="hud-brand-header">
+        <div class="hud-logo">
+          <i class="fa-solid fa-eye"></i>
+          <span class="logo-glow-pulse"></span>
+        </div>
+        <div class="hud-brand-text">
+          <h2>RetinaScan <span class="text-cyan" style="color: var(--neon-cyan);">AI</span></h2>
+          <p>AI-Powered DR Detection</p>
+        </div>
+      </div>
+
+      <!-- Quick stats indicators -->
+      <div class="quick-indicators-panel">
+        <div class="quick-indicator">
+          <i class="fa-solid fa-brain"></i>
+          <span>AI ANALYSIS</span>
+        </div>
+        <div class="quick-indicator">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>SECURE</span>
+        </div>
+        <div class="quick-indicator">
+          <i class="fa-solid fa-crosshairs"></i>
+          <span>ACCURATE</span>
+        </div>
+        <div class="quick-indicator">
+          <i class="fa-solid fa-chart-simple"></i>
+          <span>SMART</span>
+        </div>
+      </div>
+
+      <!-- Caduceus medical Hex badge -->
+      <div class="top-hex-medical">
+        <div class="hex-badge">
+          <i class="fa-solid fa-staff-snake"></i>
+        </div>
+      </div>
+
+      <!-- Massive Central Eye scanner HUD -->
+      <div class="center-eye-hud">
+        <div class="hud-circle-outer"></div>
+        <div class="hud-circle-middle"></div>
+        <div class="hud-circle-inner"></div>
+        
+        <!-- Interactive split circle display -->
+        <div class="split-eye-display">
+          <!-- Left half (Three.js Gaze Eyeball) -->
+          <div class="eye-half-left">
+            <div id="three-eyeball-canvas"></div>
+          </div>
+          <!-- Right half (Canvas detailed fundus retina) -->
+          <div class="eye-half-right">
+            <canvas id="fundus-canvas"></canvas>
+          </div>
+          <!-- Scanning vertical laser line -->
+          <div class="laser-scanner-line"></div>
+        </div>
+      </div>
+
+      <!-- Telemetry cards grid -->
+      <div class="telemetry-cards-grid">
+        
+        <!-- Card 1: Retina Scan progress -->
+        <div class="telemetry-card card-scan">
+          <div class="card-header">
+            <div>
+              <span class="card-dot-pulse"></span>
+              <span>RETINA SCAN IN PROGRESS...</span>
+            </div>
+            <span class="card-value-percent" id="scan-pct">78%</span>
+          </div>
+          <div class="card-body">
+            <div class="card-left-thumb">
+              <canvas id="mini-fundus-thumb" width="40" height="40" style="width: 100%; height: 100%;"></canvas>
+            </div>
+            <div class="card-right-progress">
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="scan-progress-fill" style="width: 78%"></div>
+              </div>
+              <div class="progress-status-text" id="scan-status">Analyzing retinal layers</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Predicted risk indicators -->
+        <div class="telemetry-card card-risk">
+          <div class="card-header">
+            <span><i class="fa-solid fa-chart-line" style="color: var(--neon-pink); margin-right: 0.35rem;"></i> PREDICTED RISK</span>
+          </div>
+          <div class="card-body-telemetry">
+            <div class="telemetry-large-value" style="color: var(--neon-green);">LOW RISK</div>
+            <div class="telemetry-sub-label">Confidence: 96.4%</div>
+          </div>
+        </div>
+
+        <!-- Card 3: Scan quality details -->
+        <div class="telemetry-card card-quality">
+          <div class="card-header">
+            <span><i class="fa-solid fa-camera" style="color: var(--neon-green); margin-right: 0.35rem;"></i> SCAN QUALITY</span>
+          </div>
+          <div class="card-body-quality">
+            <div class="quality-score-value" style="color: var(--neon-green);">Good</div>
+            <div class="quality-chart-container">
+              <canvas id="mini-ecg-chart" width="120" height="30"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: AI Model specs -->
+        <div class="telemetry-card card-model">
+          <div class="card-header">
+            <span><i class="fa-solid fa-brain" style="color: var(--neon-purple); margin-right: 0.35rem;"></i> AI MODEL</span>
+          </div>
+          <div class="card-body-model">
+            <div class="model-info">
+              <div class="model-name" style="color: var(--neon-purple);">DeepRetinaNet v2.1</div>
+              <div class="model-status">High Accuracy</div>
+            </div>
+            <div class="model-network-graph">
+              <canvas id="mini-network-graph" width="50" height="35"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Trust row badges -->
+      <div class="bottom-trust-row">
+        <div class="trust-badge">
+          <i class="fa-solid fa-lock"></i>
+          <div class="trust-text">
+            <strong>100% SECURE</strong>
+            <span>Your data is encrypted and protected</span>
+          </div>
+        </div>
+        <div class="trust-badge">
+          <i class="fa-solid fa-shield-halved"></i>
+          <div class="trust-text">
+            <strong>PRIVACY FIRST</strong>
+            <span>We respect your privacy</span>
+          </div>
+        </div>
+        <div class="trust-badge">
+          <i class="fa-solid fa-brain"></i>
+          <div class="trust-text">
+            <strong>AI POWERED</strong>
+            <span>Advanced deep learning technology</span>
+          </div>
+        </div>
+        <div class="trust-badge">
+          <i class="fa-solid fa-circle-check"></i>
+          <div class="trust-text">
+            <strong>CLINICALLY TRUSTED</strong>
+            <span>Trusted by doctors worldwide</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT SIDE: ACCOUNT CREATION FORM -->
+    <div class="right-column-card">
+      <div class="glassmorphism-card-wrapper">
+        <div class="register-glow-accent"></div>
+        
+        <div class="register-glass-card" id="register-card">
+          <!-- avatar container -->
+          <div class="user-avatar-badge">
+            <div class="avatar-circle">
+              <i class="fa-regular fa-user"></i>
+              <div class="avatar-plus-badge"><i class="fa-solid fa-plus"></i></div>
+            </div>
+          </div>
+
+          <!-- Title -->
+          <div class="card-titles">
+            <h2>Create Account</h2>
+            <p>Join RetinaScan AI and be a part of the future of eye care</p>
+          </div>
+
+          <!-- Form elements -->
+          <form method="POST" action="{{ url_for('register') }}" class="register-form">
+            <!-- Full Name field -->
+            <div class="input-form-group">
+              <label for="name"><i class="fa-regular fa-user"></i> Full Name</label>
+              <div class="input-inner-wrapper">
+                <i class="fa-solid fa-user-pen input-icon"></i>
+                <input type="text" id="name" name="name" required placeholder="Enter your full name">
+                <span class="input-focus-border"></span>
+              </div>
+            </div>
+
+            <!-- Email Address field -->
+            <div class="input-form-group">
+              <label for="email"><i class="fa-regular fa-envelope"></i> Email Address</label>
+              <div class="input-inner-wrapper">
+                <i class="fa-solid fa-envelope-open-text input-icon"></i>
+                <input type="email" id="email" name="email" required placeholder="Enter your email address">
+                <span class="input-focus-border"></span>
+              </div>
+            </div>
+
+            <!-- Password field -->
+            <div class="input-form-group">
+              <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+              <div class="input-inner-wrapper">
+                <i class="fa-solid fa-key input-icon"></i>
+                <input type="password" id="password" name="password" required placeholder="Create a strong password" oninput="checkPasswordStrength(this.value)">
+                <span class="input-focus-border"></span>
+                <button type="button" class="btn-eye-toggle" onclick="togglePasswordVisibility()" title="Toggle visibility">
+                  <i class="fa-solid fa-eye-slash" id="password-eye-icon"></i>
+                </button>
+              </div>
+              
+              <!-- Password strength segments meter -->
+              <div class="password-strength-panel">
+                <div class="strength-segments">
+                  <span class="strength-segment" id="seg-1"></span>
+                  <span class="strength-segment" id="seg-2"></span>
+                  <span class="strength-segment" id="seg-3"></span>
+                  <span class="strength-segment" id="seg-4"></span>
+                  <span class="strength-segment" id="seg-5"></span>
+                </div>
+                <div class="strength-status-text">Password strength: <span id="strength-label" style="color: var(--text-secondary);">Empty</span></div>
+              </div>
+            </div>
+
+            <!-- Submit button -->
+            <button type="submit" class="btn-register-submit">
+              <i class="fa-solid fa-user-plus"></i> Create Account
+            </button>
+          </form>
+
+          <div class="or-separator">
+            <span class="sep-line"></span>
+            <span class="sep-text">OR</span>
+            <span class="sep-line"></span>
+          </div>
+
+          <!-- Bottom redirect footer -->
+          <div class="card-footer-redirect">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Floating far-right toolbar HUD -->
+      <div class="floating-hud-toolbar">
+        <div class="toolbar-item item-ai">
+          <span class="badge-text-ai">AI</span>
+        </div>
+        <div class="toolbar-item item-pulse">
+          <i class="fa-solid fa-wave-square"></i>
+        </div>
+        <div class="toolbar-item item-eye">
+          <i class="fa-solid fa-eye"></i>
+        </div>
+        <div class="toolbar-item item-holo" title="Holo Sphere">
+          <div class="holo-globe-animation">
+            <div class="holo-ring-1"></div>
+            <div class="holo-ring-2"></div>
+            <div class="holo-ring-3"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Floating bottom-right upload shortcut button -->
+    <a href="{{ url_for('upload') }}" class="floating-action-upload" title="Upload Scan">
+      <i class="fa-solid fa-arrow-up"></i>
+    </a>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('mouse-move-wrapper');
+  const glow = document.getElementById('custom-mouse-glow');
+  const card = document.getElementById('register-card');
+  
+  // 1. Mouse Follow Glow Effect
+  if (container && glow) {
+    container.addEventListener('mousemove', function(e) {
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      glow.style.left = x + 'px';
+      glow.style.top = y + 'px';
+    });
+  }
+  
+  // 2. 3D Parallax Tilt Effect on Registration Card
+  if (card) {
+    card.addEventListener('mousemove', function(e) {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const xc = rect.width / 2;
+      const yc = rect.height / 2;
+      
+      const rotateX = (yc - y) / 20;
+      const rotateY = (x - xc) / 20;
+      
+      card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-2px)`;
+    });
+    
+    card.addEventListener('mouseleave', function() {
+      card.style.transform = 'rotateX(0deg) rotateY(0deg) translateY(0px)';
+    });
+  }
+
+  // 3. Initialize background neural net particle canvas
+  initNeuralBg();
+
+  // 4. Initialize Three.js 3D eyeball
+  initThreeEyeball();
+
+  // 5. Draw Retina Fundus image on Canvas
+  drawRetinaFundus();
+
+  // 6. Draw mini thumbnail fundus
+  drawMiniFundusThumb();
+
+  // 7. Draw and animate the mini ECG line chart
+  drawMiniECG();
+
+  // 8. Draw and animate the mini neural graph
+  drawMiniNetworkGraph();
+
+  // 9. Simulated scan status and progress incrementer
+  simulateScanProgress();
+});
+
+// Toggle password visibility
+function togglePasswordVisibility() {
+  const pwdInput = document.getElementById('password');
+  const eyeIcon = document.getElementById('password-eye-icon');
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    eyeIcon.className = 'fa-solid fa-eye';
+  } else {
+    pwdInput.type = 'password';
+    eyeIcon.className = 'fa-solid fa-eye-slash';
+  }
+}
+
+// Live password strength indicator check
+function checkPasswordStrength(val) {
+  const segments = [
+    document.getElementById('seg-1'),
+    document.getElementById('seg-2'),
+    document.getElementById('seg-3'),
+    document.getElementById('seg-4'),
+    document.getElementById('seg-5')
+  ];
+  const label = document.getElementById('strength-label');
+  
+  // Reset all segments
+  segments.forEach(seg => {
+    if (seg) {
+      seg.style.background = 'rgba(255, 255, 255, 0.08)';
+      seg.style.boxShadow = 'none';
+    }
+  });
+
+  if (val.length === 0) {
+    if (label) {
+      label.innerText = 'Empty';
+      label.style.color = 'var(--text-secondary)';
+    }
+    return;
+  }
+
+  let score = 0;
+  if (val.length >= 6) score++;
+  if (val.length >= 10) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+
+  // Minimum score bounds
+  score = Math.max(1, Math.min(score, 5));
+
+  // Colors mapping
+  let color = '#ff3333'; // Weak
+  let text = 'Weak';
+  if (score === 2) {
+    color = '#ff9900'; // Fair
+    text = 'Fair';
+  } else if (score === 3) {
+    color = '#ffcc00'; // Moderate
+    text = 'Moderate';
+  } else if (score === 4) {
+    color = '#99ff33'; // Good
+    text = 'Good';
+  } else if (score === 5) {
+    color = 'var(--neon-green)'; // Strong
+    text = 'Strong';
+  }
+
+  for (let i = 0; i < score; i++) {
+    if (segments[i]) {
+      segments[i].style.background = color;
+      segments[i].style.boxShadow = `0 0 6px ${color}`;
+    }
+  }
+
+  if (label) {
+    label.innerText = text;
+    label.style.color = color;
+  }
+}
+
+// Draw the detailed Retina Fundus image on the canvas
+function drawRetinaFundus() {
+  const canvas = document.getElementById('fundus-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  
+  // High-dpi sizing
+  const size = 300;
+  canvas.width = size * window.devicePixelRatio;
+  canvas.height = size * window.devicePixelRatio;
+  canvas.style.width = '300px';
+  canvas.style.height = '300px';
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  function render() {
+    ctx.clearRect(0, 0, size, size);
+
+    // 1. Dark red/orange radial fundus background
+    // The disc center is slightly to the right, matching anatomy
+    const grad = ctx.createRadialGradient(220, 150, 5, 150, 150, 180);
+    grad.addColorStop(0, '#f25124');     // Optic disc region
+    grad.addColorStop(0.12, '#cf3813');
+    grad.addColorStop(0.35, '#871a06');
+    grad.addColorStop(0.7, '#400800');
+    grad.addColorStop(1, '#1a0300');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    // 2. Draw Optic Disc (glowing yellow circle on the right)
+    const opticDiscGlow = ctx.createRadialGradient(220, 150, 0, 220, 150, 28);
+    opticDiscGlow.addColorStop(0, '#fff6ab');
+    opticDiscGlow.addColorStop(0.3, '#ffbf4a');
+    opticDiscGlow.addColorStop(0.8, '#cf3813');
+    opticDiscGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = opticDiscGlow;
+    ctx.beginPath();
+    ctx.arc(220, 150, 28, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Draw blood vessels branching out from the optic disc
+    ctx.strokeStyle = '#6e0700';
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const vessels = [
+      // Upper arches
+      { points: [[220,150], [210,130], [170,110], [120,100], [70,105]] },
+      { points: [[220,150], [200,120], [180,90], [150,60], [100,55]] },
+      { points: [[220,150], [230,120], [240,90], [260,70]] },
+      // Lower arches
+      { points: [[220,150], [210,170], [170,195], [120,210], [65,200]] },
+      { points: [[220,150], [195,185], [175,225], [145,250], [90,265]] },
+      { points: [[220,150], [235,180], [250,215], [265,240]] },
+      // Nasal/Macular vessels (running left towards center)
+      { points: [[220,150], [185,150], [150,145], [115,150]] },
+      { points: [[220,150], [190,165], [160,170]] }
+    ];
+
+    // Branch drawing with helper function
+    vessels.forEach(v => {
+      ctx.beginPath();
+      ctx.moveTo(v.points[0][0], v.points[0][1]);
+      for (let i = 1; i < v.points.length; i++) {
+        ctx.lineTo(v.points[i][0], v.points[i][1]);
+      }
+      ctx.stroke();
+
+      // Draw secondary thin branch
+      if (v.points.length > 3) {
+        ctx.beginPath();
+        ctx.strokeStyle = '#a61205';
+        ctx.lineWidth = 1.0;
+        ctx.moveTo(v.points[2][0], v.points[2][1]);
+        ctx.quadraticCurveTo(
+          v.points[2][0] - 15,
+          v.points[2][1] + (Math.random() > 0.5 ? 20 : -20),
+          v.points[2][0] - 40,
+          v.points[2][1] + (Math.random() > 0.5 ? 30 : -30)
+        );
+        ctx.stroke();
+      }
+    });
+
+    // 4. Draw Macula (darker spot in the center-left area)
+    const maculaGrad = ctx.createRadialGradient(130, 155, 0, 130, 155, 25);
+    maculaGrad.addColorStop(0, '#2e0200');
+    maculaGrad.addColorStop(0.6, '#4f0a00');
+    maculaGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = maculaGrad;
+    ctx.beginPath();
+    ctx.arc(130, 155, 25, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 5. Digital tech graphics overlay (concentric circle overlays, diagnostics grid)
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    // Horizontal tracking line
+    ctx.moveTo(30, 150);
+    ctx.lineTo(270, 150);
+    // Vertical tracking line
+    ctx.moveTo(150, 30);
+    ctx.lineTo(150, 270);
+    ctx.stroke();
+
+    // Mini reticle target
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+    ctx.beginPath();
+    ctx.arc(150, 150, 45, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Optic disc telemetry box
+    ctx.strokeStyle = 'rgba(189, 0, 255, 0.4)';
+    ctx.strokeRect(198, 128, 44, 44);
+    
+    // Draw scanner tick markings
+    ctx.fillStyle = 'rgba(0, 240, 255, 0.7)';
+    ctx.fillRect(148, 102, 4, 2);
+    ctx.fillRect(148, 196, 4, 2);
+    ctx.fillRect(102, 148, 2, 4);
+    ctx.fillRect(196, 148, 2, 4);
+  }
+
+  render();
+}
+
+// Draw mini thumbnail fundus
+function drawMiniFundusThumb() {
+  const canvas = document.getElementById('mini-fundus-thumb');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = 40;
+  
+  const grad = ctx.createRadialGradient(28, 20, 1, 20, 20, 20);
+  grad.addColorStop(0, '#f56338');
+  grad.addColorStop(0.3, '#b52b0b');
+  grad.addColorStop(1, '#2e0200');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(20, 20, 20, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw tiny optic nerve dot
+  ctx.fillStyle = '#fffda1';
+  ctx.beginPath();
+  ctx.arc(28, 20, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw tiny veins
+  ctx.strokeStyle = '#ff2b14';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(28, 20);
+  ctx.quadraticCurveTo(20, 14, 10, 12);
+  ctx.moveTo(28, 20);
+  ctx.quadraticCurveTo(22, 26, 12, 28);
+  ctx.stroke();
+}
+
+// Draw mini quality ECG chart
+function drawMiniECG() {
+  const canvas = document.getElementById('mini-ecg-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+
+  let offset = 0;
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.strokeStyle = '#39ff14';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+
+    ctx.moveTo(0, height / 2);
+    for (let x = 0; x < width; x++) {
+      let y = height / 2;
+      let phase = (x + offset) % 60;
+      
+      if (phase > 15 && phase < 22) {
+        y -= 8; // Small wave
+      } else if (phase >= 22 && phase < 26) {
+        y += 12; // deep drop
+      } else if (phase >= 26 && phase < 32) {
+        y -= 18; // peak spike
+      } else if (phase >= 32 && phase < 38) {
+        y = height / 2 + 5;
+      }
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    offset += 1.25;
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// Draw mini model network graph
+function drawMiniNetworkGraph() {
+  const canvas = document.getElementById('mini-network-graph');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+
+  const nodes = [
+    { x: 10, y: 18, targetY: 18, baseSpeed: 0.05 },
+    { x: 25, y: 8, targetY: 8, baseSpeed: 0.08 },
+    { x: 25, y: 28, targetY: 28, baseSpeed: 0.04 },
+    { x: 40, y: 18, targetY: 18, baseSpeed: 0.07 }
+  ];
+
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    // Update nodes position slightly to look alive
+    nodes.forEach((n, idx) => {
+      n.y += (n.targetY - n.y) * 0.05;
+      if (Math.abs(n.y - n.targetY) < 0.5) {
+        n.targetY = (idx === 1 ? 6 : idx === 2 ? 30 : 18) + (Math.random() - 0.5) * 8;
+      }
+    });
+
+    // Draw connections
+    ctx.strokeStyle = 'rgba(189, 0, 255, 0.4)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(nodes[0].x, nodes[0].y);
+    ctx.lineTo(nodes[1].x, nodes[1].y);
+    ctx.moveTo(nodes[0].x, nodes[0].y);
+    ctx.lineTo(nodes[2].x, nodes[2].y);
+    ctx.moveTo(nodes[1].x, nodes[1].y);
+    ctx.lineTo(nodes[3].x, nodes[3].y);
+    ctx.moveTo(nodes[2].x, nodes[2].y);
+    ctx.lineTo(nodes[3].x, nodes[3].y);
+    ctx.moveTo(nodes[1].x, nodes[1].y);
+    ctx.lineTo(nodes[2].x, nodes[2].y);
+    ctx.stroke();
+
+    // Draw nodes
+    nodes.forEach(n => {
+      ctx.fillStyle = 'var(--neon-purple)';
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    });
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// Simulated scan status updater text loop
+function simulateScanProgress() {
+  const pVal = document.getElementById('scan-pct');
+  const pFill = document.getElementById('scan-progress-fill');
+  const pStatus = document.getElementById('scan-status');
+  if (!pVal || !pFill) return;
+
+  const statuses = [
+    { pct: 15, text: "Acquiring iris alignment..." },
+    { pct: 38, text: "Aligning laser focus depth..." },
+    { pct: 60, text: "Scanning retinal layers..." },
+    { pct: 78, text: "Analyzing retinal layers" },
+    { pct: 92, text: "Processing neural inference..." },
+    { pct: 100, text: "Inference calculation complete ✓" }
+  ];
+
+  let i = 3; // start at 78% as in the mockup image
+  setInterval(() => {
+    i = (i + 1) % statuses.length;
+    const item = statuses[i];
+    pVal.innerText = item.pct + "%";
+    pFill.style.width = item.pct + "%";
+    if (pStatus) pStatus.innerText = item.text;
+  }, 4000);
+}
+
+// Full page Connecting Neural network particle canvas logic
+function initNeuralBg() {
+  const canvas = document.getElementById('neural-bg-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+
+  const particles = [];
+  const particleCount = 45;
+
+  for (let i = 0; i < particleCount; i++) {
+    particles.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.45,
+      vy: (Math.random() - 0.5) * 0.45,
+      radius: Math.random() * 2 + 1.2
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw lines
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
+    ctx.lineWidth = 0.75;
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dist = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw particles
+    particles.forEach(p => {
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.2)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Update position
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // Bounce off walls
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+    });
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  });
+}
+
+// Three.js 3D Eyeball left side setup
+function initThreeEyeball() {
+  try {
+    const container = document.getElementById('three-eyeball-canvas');
+    if (!container || typeof THREE === 'undefined') return;
+
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    const scene = new THREE.Scene();
+    // Set up camera
+    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    camera.position.z = 4.2;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // Group containing eyeball layers
+    const eyeGroup = new THREE.Group();
+    scene.add(eyeGroup);
+
+    // 1. Sclera: white sphere with procedurally drawn capillary vessels
+    const scleraCanvas = document.createElement('canvas');
+    scleraCanvas.width = 512;
+    scleraCanvas.height = 256;
+    const sCtx = scleraCanvas.getContext('2d');
+    sCtx.fillStyle = '#f5f7fb';
+    sCtx.fillRect(0, 0, 512, 256);
+    // Capillaries
+    sCtx.strokeStyle = 'rgba(255, 0, 85, 0.12)';
+    sCtx.lineWidth = 1.0;
+    for (let i = 0; i < 20; i++) {
+      sCtx.beginPath();
+      sCtx.moveTo(Math.random() * 512, Math.random() * 256);
+      sCtx.bezierCurveTo(
+        Math.random() * 512, Math.random() * 256,
+        Math.random() * 512, Math.random() * 256,
+        Math.random() * 512, Math.random() * 256
+      );
+      sCtx.stroke();
+    }
+    const scleraTexture = new THREE.CanvasTexture(scleraCanvas);
+    const scleraGeo = new THREE.SphereGeometry(1.4, 32, 32);
+    const scleraMat = new THREE.MeshPhongMaterial({
+      map: scleraTexture,
+      shininess: 40
+    });
+    const scleraMesh = new THREE.Mesh(scleraGeo, scleraMat);
+    eyeGroup.add(scleraMesh);
+
+    // 2. Iris: procedurally drawn high-detail fibers texture
+    const irisCanvas = document.createElement('canvas');
+    irisCanvas.width = 256;
+    irisCanvas.height = 256;
+    const iCtx = irisCanvas.getContext('2d');
+    
+    // Radial gradient base
+    const radialBase = iCtx.createRadialGradient(128, 128, 5, 128, 128, 120);
+    radialBase.addColorStop(0, '#000000'); // pupil center
+    radialBase.addColorStop(0.2, '#02040c');
+    radialBase.addColorStop(0.35, '#0055ff'); // inner iris blue
+    radialBase.addColorStop(0.7, '#00f0ff');  // electric blue
+    radialBase.addColorStop(1, '#010821');   // dark outer ring
+    iCtx.fillStyle = radialBase;
+    iCtx.fillRect(0, 0, 256, 256);
+
+    // Draw radial muscle fibers
+    iCtx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+    iCtx.lineWidth = 0.5;
+    for (let k = 0; k < 180; k++) {
+      const angle = (k * 2 * Math.PI) / 180;
+      const startRadius = 38 + Math.random() * 10;
+      const endRadius = 100 + Math.random() * 15;
+      const x1 = 128 + Math.cos(angle) * startRadius;
+      const y1 = 128 + Math.sin(angle) * startRadius;
+      const x2 = 128 + Math.cos(angle) * endRadius;
+      const y2 = 128 + Math.sin(angle) * endRadius;
+      
+      iCtx.beginPath();
+      iCtx.moveTo(x1, y1);
+      iCtx.lineTo(x2, y2);
+      iCtx.stroke();
+    }
+
+    const irisTexture = new THREE.CanvasTexture(irisCanvas);
+    const irisGeo = new THREE.SphereGeometry(1.405, 32, 32, 0, Math.PI * 2, 0, Math.PI / 4.5);
+    const irisMat = new THREE.MeshBasicMaterial({
+      map: irisTexture,
+      transparent: true,
+      opacity: 0.95
+    });
+    const irisMesh = new THREE.Mesh(irisGeo, irisMat);
+    irisMesh.rotation.x = Math.PI / 2;
+    eyeGroup.add(irisMesh);
+
+    // 3. Cornea: glossy transparent cover
+    const corneaGeo = new THREE.SphereGeometry(1.41, 32, 32);
+    const corneaMat = new THREE.MeshPhongMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.1,
+      shininess: 100,
+      specular: 0xffffff
+    });
+    const corneaMesh = new THREE.Mesh(corneaGeo, corneaMat);
+    eyeGroup.add(corneaMesh);
+
+    // Add lights
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    dirLight.position.set(3, 3, 5);
+    scene.add(dirLight);
+
+    const ambLight = new THREE.AmbientLight(0x0a0f2b, 1.5);
+    scene.add(ambLight);
+
+    // Gaze tracking cursor interaction variables
+    let targetRotationX = 0;
+    let targetRotationY = 0;
+    
+    window.addEventListener('mousemove', function(e) {
+      // Normalised coordinate values (-1 to 1)
+      const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
+      const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+      
+      // Limits
+      targetRotationY = x * 0.45;
+      targetRotationX = -y * 0.35;
+    });
+
+    const animateEye = () => {
+      requestAnimationFrame(animateEye);
+
+      // Eased eyeball gaze tracking
+      eyeGroup.rotation.y += (targetRotationY - eyeGroup.rotation.y) * 0.05;
+      eyeGroup.rotation.x += (targetRotationX - eyeGroup.rotation.x) * 0.05;
+
+      // Iris subtle breathing glow
+      irisMat.opacity = 0.84 + Math.sin(Date.now() * 0.0035) * 0.12;
+
+      renderer.render(scene, camera);
+    };
+    animateEye();
+
+    window.addEventListener('resize', () => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    });
+  } catch (e) {
+    console.warn("Three.js eyeball initialization failed (e.g. WebGL unsupported):", e);
+  }
+}
+</script>
+{% endblock %}

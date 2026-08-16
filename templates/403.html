@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Access Forbidden — RetinaScan AI{% endblock %}
+{% block content %}
+<div class="auth-container" style="max-width:540px; margin:5rem auto; text-align:center;">
+  <div class="card" style="border-color: rgba(255, 122, 0, 0.2); box-shadow: 0 0 25px rgba(255, 122, 0, 0.1), var(--shadow-glass);">
+    <div style="font-size:4rem; margin-bottom:1.25rem; color:var(--neon-orange); text-shadow:0 0 15px rgba(255, 122, 0, 0.4);"><i class="fa-solid fa-user-lock"></i></div>
+    <h2 style="font-family:'Space Grotesk',sans-serif; color:white; font-size:1.8rem; margin-bottom:0.5rem;">403 - Restricted Access</h2>
+    <p style="color:var(--text-secondary); margin-bottom:1.75rem; font-size:0.95rem;">Your credential level is insufficient to access this diagnostic telemetry node.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary" style="background: linear-gradient(135deg, var(--neon-orange), var(--neon-purple)); box-shadow: 0 0 15px rgba(255, 122, 0, 0.35);"><i class="fa-solid fa-house"></i> Return to Station</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block title %}Demographics & Prevalence Analytics — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-earth-asia" style="color:var(--neon-green);"></i> Clinical Analytics & Prevalence Mapping</h1>
+  <p>Geographical GIS mapping, age cohort statistics, and custom report compile dashboard</p>
+  <div style="margin-top:1rem;">
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Return to Admin Dashboard</a>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+
+  <!-- GIS Prevalence Map (India) -->
+  <div class="card" style="grid-column: span 2;">
+    <h3><i class="fa-solid fa-map-location-dot" style="color:var(--neon-cyan);"></i> Indian DR Prevalence Heatmap</h3>
+    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem;">Click/Hover on states to inspect registered ophthalmic clinics network and diabetic retinopathy prevalence rates.</p>
+    
+    <div style="display:grid; grid-template-columns:1.2fr 0.8fr; gap:2rem; align-items:center;">
+      <!-- Interactive Map Render (SVG) -->
+      <div style="background:rgba(255,255,255,0.01); border:1px solid var(--border-glass); border-radius:var(--radius-lg); padding:1rem; display:flex; justify-content:center;">
+        <!-- Simulated interactive India Map using styled responsive SVGs -->
+        <svg id="indiaSvg" viewBox="0 0 400 450" style="width:100%; max-height:400px;">
+          <!-- Outline path drawing representing India simplified regions -->
+          <!-- North Region -->
+          <path d="M120,40 L160,20 L200,45 L180,80 L140,80 Z" fill="rgba(189,0,255,0.2)" stroke="var(--neon-purple)" stroke-width="1.5" class="map-state" data-name="North India" data-prev="14.8%" data-cases="4,520" style="cursor:pointer; transition:all 0.3s;"></path>
+          <!-- Central Region -->
+          <path d="M120,130 L220,110 L250,170 L150,195 L110,170 Z" fill="rgba(0,240,255,0.3)" stroke="var(--neon-cyan)" stroke-width="1.5" class="map-state" data-name="Central India" data-prev="17.2%" data-cases="7,810" style="cursor:pointer; transition:all 0.3s;"></path>
+          <!-- South Region (High Prevalence) -->
+          <path d="M130,260 L200,240 L210,360 L180,410 L150,360 Z" fill="rgba(255,0,122,0.4)" stroke="var(--neon-pink)" stroke-width="1.5" class="map-state" data-name="South India (TN/Kerala)" data-prev="24.6%" data-cases="14,230" style="cursor:pointer; transition:all 0.3s;"></path>
+          <!-- West Region -->
+          <path d="M50,130 L110,130 L130,220 L70,230 Z" fill="rgba(0,255,102,0.2)" stroke="var(--neon-green)" stroke-width="1.5" class="map-state" data-name="West India" data-prev="11.4%" data-cases="3,110" style="cursor:pointer; transition:all 0.3s;"></path>
+          <!-- East Region -->
+          <path d="M225,115 L290,110 L300,160 L240,180 Z" fill="rgba(255,214,0,0.2)" stroke="var(--neon-yellow)" stroke-width="1.5" class="map-state" data-name="East India" data-prev="13.1%" data-cases="3,890" style="cursor:pointer; transition:all 0.3s;"></path>
+          
+          <!-- State Capital Pins -->
+          <circle cx="178" cy="335" r="5" fill="white" stroke="var(--neon-pink)" stroke-width="2" class="map-pin"></circle>
+          <text x="190" y="340" fill="white" font-size="10" font-family="Space Grotesk" font-weight="700">Chennai Core</text>
+        </svg>
+      </div>
+
+      <!-- Map Detail Display Card -->
+      <div class="card" style="margin:0; border:1px dashed var(--border-glass); background:rgba(6,9,19,0.5);">
+        <h4 id="regionName" style="color:var(--neon-cyan); font-family:'Orbitron',sans-serif; margin-bottom:1rem;">Select a region...</h4>
+        <div style="display:flex; flex-direction:column; gap:0.75rem; font-size:0.88rem;">
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--text-secondary);">Avg DR Prevalence:</span>
+            <strong id="regionPrev" style="color:white;">-</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--text-secondary);">Total Registered Cases:</span>
+            <strong id="regionCases" style="color:white;">-</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--text-secondary);">Active Telemed Doctors:</span>
+            <strong style="color:var(--neon-green);">14 Ophthal.</strong>
+          </div>
+        </div>
+        <div style="margin-top:1.5rem; border-top:1px solid var(--border-glass); padding-top:1rem; font-size:0.8rem; color:var(--text-secondary);">
+          <i class="fa-solid fa-circle-info" style="color:var(--neon-pink);"></i> Southern states report a higher DR incidence cluster due to elevated clinical registries integration across Tamil Nadu.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Age Cohorts Demographics Chart -->
+  <div class="card">
+    <h3><i class="fa-solid fa-chart-pie" style="color:var(--neon-purple);"></i> DR Stage Prevalence by Age Cohort</h3>
+    <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:1rem;">Distribution of positive retinopathy staging segmented by patient age groups.</p>
+    <div style="position:relative; height:200px; width:100%;">
+      <canvas id="ageDemographicsChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Monthly Stats Staging Trends Chart -->
+  <div class="card">
+    <h3><i class="fa-solid fa-chart-line" style="color:var(--neon-orange);"></i> Monthly DR Progression Tracking</h3>
+    <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:1rem;">Screening volume and severe/proliferative class trend logs over the past 6 months.</p>
+    <div style="position:relative; height:200px; width:100%;">
+      <canvas id="monthlyTrendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Custom Report Builder & Data Export -->
+  <div class="card" style="grid-column: span 2;">
+    <h3><i class="fa-solid fa-file-export" style="color:var(--neon-pink);"></i> Custom Report Compiler & Database Exporter</h3>
+    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem;">Select medical variables columns, filter criteria, and compile custom report packets or download excel sheets.</p>
+    
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
+      <form action="/admin/compile-report" method="POST">
+        <h4 style="margin-bottom:1rem; font-size:0.95rem; color:white;"><i class="fa-solid fa-sliders" style="color:var(--neon-cyan);"></i> Select Fields to Compile</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1.5rem;">
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.88rem; cursor:pointer;">
+            <input type="checkbox" name="fields" value="name" checked/> Patient Name
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.88rem; cursor:pointer;">
+            <input type="checkbox" name="fields" value="age" checked/> Age & Gender
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.88rem; cursor:pointer;">
+            <input type="checkbox" name="fields" value="hba1c" checked/> HbA1c Levels
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.88rem; cursor:pointer;">
+            <input type="checkbox" name="fields" value="bp" checked/> Blood Pressure
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.88rem; cursor:pointer;">
+            <input type="checkbox" name="fields" value="stage" checked/> AI Prediction Stage
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.88rem; cursor:pointer;">
+            <input type="checkbox" name="fields" value="second_opinion"/> Second Opinion Result
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.88rem; cursor:pointer;">
+            <input type="checkbox" name="fields" value="quality"/> Scan Quality Score
+          </label>
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.88rem; cursor:pointer;">
+            <input type="checkbox" name="fields" value="signed_off"/> Doctor Sign-off State
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label>Filter Staging Condition</label>
+          <select name="filter_stage" style="background:#0a0f24; border:1px solid var(--border-glass); color:white; padding:0.5rem; border-radius:8px; width:100%;">
+            <option value="all">Include All Scans (No DR → Proliferative)</option>
+            <option value="dr_only">Retinopathy Only (Mild, Moderate, Severe, Proliferative)</option>
+            <option value="severe_only">Urgent Reference Only (Severe / Proliferative)</option>
+            <option value="normal_only">Healthy Scans Only</option>
+          </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-cube"></i> Compile Custom Brief</button>
+      </form>
+
+      <div style="border-left:1px solid var(--border-glass); padding-left:2rem; display:flex; flex-direction:column; justify-content:center; gap:1.25rem;">
+        <h4 style="font-size:0.95rem; color:white;"><i class="fa-solid fa-download" style="color:var(--neon-green);"></i> Export Clinical Datastore</h4>
+        <p style="font-size:0.82rem; color:var(--text-secondary);">Download complete user, scan validation records, and audit logs formatted in structured database formats.</p>
+        
+        <div style="display:flex; gap:1rem;">
+          <a href="/admin/export-csv" class="btn btn-outline" style="border-color:var(--neon-green); color:var(--neon-green); flex:1;">
+            <i class="fa-solid fa-file-csv"></i> Export to CSV
+          </a>
+          <a href="/admin/export-excel" class="btn btn-outline" style="border-color:var(--neon-cyan); color:var(--neon-cyan); flex:1;">
+            <i class="fa-solid fa-file-excel"></i> Export to Excel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script>
+// Map region hover handler
+const regions = document.querySelectorAll('.map-state');
+const regionName = document.getElementById('regionName');
+const regionPrev = document.getElementById('regionPrev');
+const regionCases = document.getElementById('regionCases');
+
+regions.forEach(reg => {
+  reg.addEventListener('mouseenter', function() {
+    // Reset fills
+    regions.forEach(r => r.style.fillOpacity = '0.5');
+    
+    // Highlight hovered
+    this.style.fillOpacity = '1.0';
+    
+    regionName.innerText = this.getAttribute('data-name');
+    regionPrev.innerText = this.getAttribute('data-prev');
+    regionCases.innerText = this.getAttribute('data-cases');
+  });
+  
+  reg.addEventListener('mouseleave', function() {
+    this.style.fillOpacity = '0.5';
+  });
+});
+
+// Demographic age cohorts chart
+const ageCtx = document.getElementById('ageDemographicsChart');
+new Chart(ageCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Pediatric (<18)', 'Adults (18-50)', 'Elderly (>50)'],
+    datasets: [{
+      data: [3, 42, 55],
+      backgroundColor: ['#00f0ff', '#00ff66', '#ff007a'],
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.05)'
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { color: '#9ca3af', font: { family: 'Space Grotesk' } }
+      }
+    }
+  }
+});
+
+// Monthly trends chart
+const monthlyCtx = document.getElementById('monthlyTrendChart');
+new Chart(monthlyCtx, {
+  type: 'line',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [
+      {
+        label: 'Total Scans',
+        data: [120, 150, 180, 240, 310, 420],
+        borderColor: '#00f0ff',
+        backgroundColor: 'rgba(0,240,255,0.05)',
+        tension: 0.35,
+        fill: true
+      },
+      {
+        label: 'Severe DR Cases',
+        data: [15, 18, 22, 35, 48, 62],
+        borderColor: '#ff007a',
+        backgroundColor: 'transparent',
+        tension: 0.35
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#9ca3af', font: { family: 'Space Grotesk' } } }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
+      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } }
+    }
+  }
+});
+</script>
+{% endblock %}

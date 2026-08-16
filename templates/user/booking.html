@@ -1,0 +1,1149 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('book_appointment') }} — RetinaScan AI{% endblock %}
+
+{% block extra_head %}
+<!-- Modern Sci-Fi typography from Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Core variables matching the mock palette ── */
+  :root {
+    --neon-cyan: #00f0ff;
+    --neon-purple: #bd00ff;
+    --neon-pink: #ff007f;
+    --neon-green: #39ff14;
+    --bg-dark-navy: #030511;
+    --text-primary: #ffffff;
+    --text-secondary: #8c9bb4;
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --card-bg-glass: rgba(10, 16, 42, 0.55);
+  }
+
+  /* ── Overrides for global base.html components ── */
+  .navbar {
+    background: rgba(10, 16, 42, 0.7) !important;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--border-glass) !important;
+  }
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    background: var(--bg-dark-navy) !important;
+  }
+  body {
+    overflow-x: hidden !important;
+    background: var(--bg-dark-navy) !important;
+  }
+
+  /* ── Fullscreen wrapper with deep medical technologies ambient ── */
+  .booking-fullscreen-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at 30% 30%, #060b24 0%, var(--bg-dark-navy) 80%);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    overflow: hidden;
+    padding-top: 80px; /* offset navbar */
+  }
+
+  /* 3D Wave Particle Canvas Background */
+  #wave-bg-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.65;
+  }
+
+  .booking-main-container {
+    width: 100%;
+    max-width: 1350px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 4rem;
+    z-index: 10;
+    align-items: center;
+    position: relative;
+  }
+
+  /* ── Left Column (Ophthalmology Exam Room HUD) ── */
+  .left-column-room {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2.2rem;
+  }
+
+  /* Center Eye Clinical HUD machine display */
+  .clinical-hud-frame {
+    position: relative;
+    width: 440px;
+    height: 380px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle, rgba(13, 21, 56, 0.45) 0%, rgba(3, 5, 18, 0.8) 100%);
+    border: 2px solid rgba(0, 240, 255, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(0, 240, 255, 0.05);
+    overflow: hidden;
+  }
+
+  /* Slit lamp / room clinic wireframe grid overlay background */
+  .clinical-grid-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Concentric HUD rings */
+  .clinical-circle-outer {
+    position: absolute;
+    width: 330px;
+    height: 330px;
+    border: 1.5px dashed rgba(0, 240, 255, 0.25);
+    border-radius: 50%;
+    animation: rotateCW 35s infinite linear;
+    z-index: 2;
+  }
+  .clinical-circle-inner {
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    border: 2.5px solid rgba(189, 0, 255, 0.12);
+    border-top-color: var(--neon-purple);
+    border-bottom-color: var(--neon-cyan);
+    border-radius: 50%;
+    animation: rotateCCW 18s infinite linear;
+    z-index: 2;
+  }
+
+  @keyframes rotateCW {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes rotateCCW {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+  }
+
+  /* 3D Eyeball container centered in clinic room graphic */
+  .clinical-eye-display {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid rgba(0, 240, 255, 0.4);
+    box-shadow: 0 0 35px rgba(0, 240, 255, 0.35);
+    z-index: 5;
+    background: rgba(3, 5, 18, 0.95);
+  }
+  #three-eyeball-canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Laser scanner sweep line */
+  .vertical-laser-sweep {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    box-shadow: 0 0 12px var(--neon-cyan), 0 0 4px var(--neon-cyan);
+    z-index: 6;
+    pointer-events: none;
+    animation: laserSweep 4.5s infinite ease-in-out;
+  }
+  @keyframes laserSweep {
+    0%, 100% { top: 0%; opacity: 0.1; }
+    10% { opacity: 0.9; }
+    50% { top: 100%; opacity: 0.9; }
+    90% { opacity: 0.9; }
+  }
+
+  /* Lower Trust Badges Row */
+  .booking-trust-badges {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem;
+  }
+  .trust-badge-card {
+    background: rgba(13, 21, 56, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 0.75rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.45rem;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+  }
+  .trust-badge-card:hover {
+    border-color: rgba(0, 240, 255, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 240, 255, 0.08), 0 8px 20px rgba(0,0,0,0.3);
+  }
+  .trust-badge-card i {
+    color: var(--neon-cyan);
+    font-size: 1rem;
+    filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.45));
+  }
+  .trust-badge-card strong {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25px;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+  .trust-badge-card span {
+    font-size: 0.55rem;
+    color: var(--text-secondary);
+    line-height: 1.25;
+  }
+
+  /* ── Right Column (Card and far-right HUD Toolbar) ── */
+  .right-column-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .booking-card-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    z-index: 5;
+    perspective: 1000px;
+  }
+
+  .booking-glow-accent {
+    position: absolute;
+    width: 480px;
+    height: 480px;
+    background: radial-gradient(circle, rgba(189, 0, 255, 0.08) 0%, rgba(0, 240, 255, 0.06) 45%, transparent 65%);
+    filter: blur(55px);
+    z-index: 1;
+    pointer-events: none;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .booking-glass-card {
+    background: rgba(10, 16, 42, 0.42);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1.5px solid rgba(0, 240, 255, 0.12);
+    border-radius: 20px;
+    padding: 2.25rem 2.25rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(189, 0, 255, 0.08);
+    transform-style: preserve-3d;
+    transition: box-shadow 0.3s, border-color 0.3s;
+  }
+  .booking-glass-card:hover {
+    border-color: rgba(189, 0, 255, 0.25);
+    box-shadow: 0 25px 60px rgba(189, 0, 255, 0.12), 0 20px 50px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Calendar square icon top center */
+  .calendar-badge-header {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    background: radial-gradient(circle, rgba(189, 0, 255, 0.25) 0%, rgba(3, 5, 18, 0.95) 100%);
+    border: 1.5px solid var(--neon-purple);
+    box-shadow: 0 0 15px rgba(189, 0, 255, 0.45);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1.25rem;
+    margin: 0 auto 1.25rem auto;
+    animation: floatingIcon 3s infinite ease-in-out;
+  }
+  @keyframes floatingIcon {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  .card-titles {
+    text-align: center;
+    margin-bottom: 1.8rem;
+  }
+  .card-titles h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 0.35rem;
+    letter-spacing: 0.25px;
+  }
+  .card-titles p {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  /* Form and Inputs styling */
+  .booking-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  .input-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .input-form-group label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    letter-spacing: 0.25px;
+  }
+  .input-inner-wrapper {
+    position: relative;
+    width: 100%;
+  }
+  .input-inner-wrapper input, .input-inner-wrapper select, .input-inner-wrapper textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 0.88rem;
+    transition: all 0.3s ease;
+  }
+  .input-inner-wrapper input, .input-inner-wrapper select {
+    padding: 0.78rem 1rem 0.78rem 2.6rem;
+  }
+  .input-inner-wrapper textarea {
+    padding: 0.78rem 1rem 0.78rem 2.6rem;
+    resize: none;
+  }
+  .input-inner-wrapper input::placeholder, .input-inner-wrapper textarea::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+  }
+  .input-inner-wrapper input:focus, .input-inner-wrapper select:focus, .input-inner-wrapper textarea:focus {
+    outline: none;
+    border-color: rgba(0, 240, 255, 0.5);
+    background: rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+  }
+  .input-inner-wrapper select option {
+    background: #0d122c;
+    color: white;
+  }
+
+  .input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    pointer-events: none;
+  }
+  .textarea-icon {
+    position: absolute;
+    left: 1rem;
+    top: 1.1rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    pointer-events: none;
+  }
+
+  .input-focus-border {
+    position: absolute;
+    bottom: 0; left: 50%;
+    width: 0; height: 2px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .input-inner-wrapper input:focus ~ .input-focus-border,
+  .input-inner-wrapper select:focus ~ .input-focus-border,
+  .input-inner-wrapper textarea:focus ~ .input-focus-border {
+    width: 100%;
+  }
+
+  /* Date & Time Side-by-Side */
+  .form-row-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  /* Submit Button styling */
+  .btn-booking-submit {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    padding: 0.85rem;
+    background: linear-gradient(135deg, #0099ff, #bd00ff);
+    border: none;
+    border-radius: 10px;
+    color: #ffffff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(189, 0, 255, 0.25);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+  .btn-booking-submit::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    transition: all 0.6s ease;
+  }
+  .btn-booking-submit:hover::before {
+    left: 100%;
+  }
+  .btn-booking-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(189, 0, 255, 0.45), 0 0 15px rgba(0, 240, 255, 0.2);
+  }
+  .btn-booking-submit:active {
+    transform: translateY(0);
+  }
+
+  .card-footer-info {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-top: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+  }
+  .card-footer-info i {
+    color: var(--neon-cyan);
+  }
+
+  /* Floating vertical toolbar HUD on far-right */
+  .floating-hud-toolbar {
+    position: absolute;
+    right: -4.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: 10;
+  }
+  .toolbar-item {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: rgba(13, 21, 56, 0.55);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    color: var(--neon-cyan);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
+    transition: all 0.3s ease;
+  }
+  .toolbar-item:hover {
+    border-color: var(--neon-cyan);
+    color: #ffffff;
+    box-shadow: 0 0 15px var(--neon-cyan);
+    transform: translateX(3px);
+  }
+
+  /* Bottom Help Contacts */
+  .bottom-contacts-row {
+    position: absolute;
+    bottom: -4.5rem;
+    left: 5%;
+    width: 90%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 1rem;
+    z-index: 10;
+  }
+  .contact-item-box {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+  .contact-icon-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0, 240, 255, 0.05);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--neon-cyan);
+    font-size: 0.95rem;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+  }
+  .contact-details-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .contact-details-text span {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+  }
+  .contact-details-text strong {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.82rem;
+    color: #ffffff;
+  }
+
+  /* Ambient mouse glow effect */
+  .mouse-glow {
+    position: absolute;
+    width: 480px;
+    height: 480px;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.05) 0%, rgba(189, 0, 255, 0.04) 35%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    mix-blend-mode: screen;
+    opacity: 0.85;
+  }
+
+  /* ── Responsive rules ── */
+  @media (max-width: 1100px) {
+    .booking-main-container {
+      grid-template-columns: 1fr;
+      gap: 3rem;
+      max-width: 520px;
+      padding: 1.5rem;
+    }
+    .left-column-room {
+      display: none;
+    }
+    .floating-hud-toolbar {
+      display: none;
+    }
+    .bottom-contacts-row {
+      position: static;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 2rem;
+      align-items: flex-start;
+    }
+    .right-column-card {
+      justify-content: center;
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="booking-fullscreen-wrapper" id="mouse-move-wrapper">
+  <!-- Interactive mouse glow tracking -->
+  <div class="mouse-glow" id="custom-mouse-glow"></div>
+
+  <!-- Dynamic 3D Wave Particle Canvas -->
+  <canvas id="wave-bg-canvas"></canvas>
+
+  <div class="booking-main-container">
+    
+    <!-- LEFT SIDE: EYE CLINIC HUD Backdrops -->
+    <div class="left-column-room">
+      
+      <!-- Ophthalmology exam machine frame -->
+      <div class="clinical-hud-frame">
+        <div class="clinical-grid-bg"></div>
+        <div class="clinical-circle-outer"></div>
+        <div class="clinical-circle-inner"></div>
+        
+        <!-- Three.js gaze tracking eyeball -->
+        <div class="clinical-eye-display">
+          <div id="three-eyeball-canvas"></div>
+        </div>
+        <!-- Laser vertical scan line -->
+        <div class="vertical-laser-sweep"></div>
+      </div>
+
+      <!-- Trust Row -->
+      <div class="booking-trust-badges">
+        <div class="trust-badge-card">
+          <i class="fa-solid fa-shield-halved"></i>
+          <strong>Secure & Private</strong>
+          <span>Your data is safe with us</span>
+        </div>
+        <div class="trust-badge-card">
+          <i class="fa-solid fa-bolt"></i>
+          <strong>Quick Booking</strong>
+          <span>Easy & fast appointment</span>
+        </div>
+        <div class="trust-badge-card">
+          <i class="fa-solid fa-user-doctor"></i>
+          <strong>Expert Doctors</strong>
+          <span>Consult with specialists</span>
+        </div>
+        <div class="trust-badge-card">
+          <i class="fa-solid fa-calendar-check"></i>
+          <strong>Timely Reminder</strong>
+          <span>We remind you on time</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT SIDE: DETAILS BOOKING CARD -->
+    <div class="right-column-card">
+      <div class="booking-card-wrapper">
+        <div class="booking-glow-accent"></div>
+        
+        <div class="booking-glass-card" id="booking-card">
+          <!-- Calendar badge header -->
+          <div class="calendar-badge-header">
+            <i class="fa-solid fa-calendar-days"></i>
+          </div>
+
+          <!-- Titles -->
+          <div class="card-titles">
+            <h2>Appointment Details</h2>
+            <p>Fill in the details below to book your appointment</p>
+          </div>
+
+          <!-- Booking Form -->
+          <form id="booking-form" action="{{ url_for('book_appointment') }}" method="POST" class="booking-form">
+            
+            <!-- Patient Name -->
+            <div class="input-form-group">
+              <label for="patient_name">Patient Name *</label>
+              <div class="input-inner-wrapper">
+                <i class="fa-solid fa-user input-icon"></i>
+                <input type="text" id="patient_name" name="patient_name" value="{{ current_user.name }}" required placeholder="Enter your full name">
+                <span class="input-focus-border"></span>
+              </div>
+            </div>
+
+            <!-- Clinic / Hospital Selection -->
+            <div class="input-form-group">
+              <label for="hospital_id">Select Clinic / Eye Hospital *</label>
+              <div class="input-inner-wrapper">
+                <i class="fa-solid fa-hospital input-icon"></i>
+                <select id="hospital_id" name="hospital_id" required onchange="loadDoctors(this.value)">
+                  <option value="">-- Select Hospital / Clinic --</option>
+                  {% for hosp in hospitals %}
+                    <option value="{{ hosp.id }}">{{ hosp.name }} ({{ hosp.city }})</option>
+                  {% endfor %}
+                </select>
+                <span class="input-focus-border"></span>
+              </div>
+            </div>
+
+            <!-- Doctor Specialist Selection (Reveals dynamically) -->
+            <div class="input-form-group" id="doctor-group" style="display: none;">
+              <label for="doctor_id">Select Retina Specialist *</label>
+              <div class="input-inner-wrapper">
+                <i class="fa-solid fa-user-doctor input-icon"></i>
+                <select id="doctor_id" name="doctor_id" required onchange="loadAvailability(this.value)">
+                  <option value="">-- Select Specialist / Doctor --</option>
+                </select>
+                <span class="input-focus-border"></span>
+              </div>
+              <div id="doctor-bio" style="font-size:0.72rem; color:var(--text-secondary); margin-top:0.4rem; padding-left:0.5rem; border-left:2px solid var(--neon-cyan); line-height: 1.4;"></div>
+            </div>
+
+            <!-- Preferred Date & Time slots (Side-by-Side) -->
+            <div class="form-row-grid">
+              
+              <!-- Date selection -->
+              <div class="input-form-group" id="date-group" style="display: none;">
+                <label for="date">Preferred Date *</label>
+                <div class="input-inner-wrapper">
+                  <i class="fa-solid fa-calendar-day input-icon"></i>
+                  <input type="date" id="date" name="date" required onchange="updateAvailabilitySlots()">
+                  <span class="input-focus-border"></span>
+                </div>
+              </div>
+
+              <!-- Time slot selection -->
+              <div class="input-form-group" id="slots-group" style="display: none;">
+                <label for="time_slot">Preferred Time *</label>
+                <div class="input-inner-wrapper">
+                  <i class="fa-solid fa-clock input-icon"></i>
+                  <select id="time_slot" name="time_slot" required>
+                    <option value="">Select time</option>
+                  </select>
+                  <span class="input-focus-border"></span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Reason for Visit / Symptoms -->
+            <div class="input-form-group" id="patient-details" style="display: none;">
+              <!-- Hidden field for phone validation match -->
+              <input type="hidden" id="patient_phone" name="patient_phone" value="{{ current_user.phone or '+919876543210' }}">
+              
+              <label for="notes">Reason for Visit</label>
+              <div class="input-inner-wrapper">
+                <i class="fa-solid fa-file-invoice textarea-icon"></i>
+                <textarea id="notes" name="notes" rows="3" placeholder="Please describe your symptoms (optional)"></textarea>
+                <span class="input-focus-border"></span>
+              </div>
+            </div>
+
+            <!-- CTA Submit button -->
+            <button type="submit" class="btn-booking-submit">
+              <i class="fa-solid fa-calendar-check"></i> Book Appointment
+            </button>
+          </form>
+
+          <!-- Secure tag -->
+          <div class="card-footer-info">
+            <i class="fa-solid fa-lock"></i>
+            <span>Your information is encrypted and secure</span>
+          </div>
+
+        </div>
+
+        <!-- Help Contacts Row under the card -->
+        <div class="bottom-contacts-row">
+          <div class="contact-item-box">
+            <div class="contact-icon-circle"><i class="fa-regular fa-clock"></i></div>
+            <div class="contact-details-text">
+              <span>Need Help?</span>
+              <strong>Call us at +91 98765 43210</strong>
+            </div>
+          </div>
+          <div class="contact-item-box">
+            <div class="contact-icon-circle"><i class="fa-regular fa-envelope"></i></div>
+            <div class="contact-details-text">
+              <span>Email Support</span>
+              <strong>support@retinascanai.com</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Floating far-right toolbar HUD -->
+      <div class="floating-hud-toolbar">
+        <div class="toolbar-item item-plus"><i class="fa-solid fa-plus"></i></div>
+        <div class="toolbar-item item-pulse"><i class="fa-solid fa-wave-square"></i></div>
+        <div class="toolbar-item item-eye"><i class="fa-solid fa-eye"></i></div>
+        <div class="toolbar-item item-shield"><i class="fa-solid fa-shield-halved"></i></div>
+      </div>
+
+    </div>
+
+    <!-- Floating bottom-right action button -->
+    <a href="{{ url_for('upload') }}" class="floating-action-upload" title="Upload Scan">
+      <i class="fa-solid fa-arrow-up"></i>
+    </a>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('mouse-move-wrapper');
+  const glow = document.getElementById('custom-mouse-glow');
+  const card = document.getElementById('booking-card');
+  
+  // 1. Mouse Follow Glow Effect
+  if (container && glow) {
+    container.addEventListener('mousemove', function(e) {
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      glow.style.left = x + 'px';
+      glow.style.top = y + 'px';
+    });
+  }
+  
+  // 2. 3D Parallax Tilt Effect on booking card
+  if (card) {
+    card.addEventListener('mousemove', function(e) {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const xc = rect.width / 2;
+      const yc = rect.height / 2;
+      
+      const rotateX = (yc - y) / 22;
+      const rotateY = (x - xc) / 22;
+      
+      card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-2px)`;
+    });
+    
+    card.addEventListener('mouseleave', function() {
+      card.style.transform = 'rotateX(0deg) rotateY(0deg) translateY(0px)';
+    });
+  }
+
+  // 3. Initialize background 3D-like animated particle wave
+  initWaveBackground();
+
+  // 4. Initialize Three.js 3D Eyeball HUD
+  initThreeEyeball();
+});
+
+// Limit date picker to future dates starting tomorrow
+const today = new Date();
+const tomorrow = new Date(today);
+tomorrow.setDate(tomorrow.getDate() + 1);
+const yyyy = tomorrow.getFullYear();
+const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+const dd = String(tomorrow.getDate()).padStart(2, '0');
+const dateInput = document.getElementById('date');
+if (dateInput) {
+  dateInput.min = `${yyyy}-${mm}-${dd}`;
+}
+
+let currentDoctorAvailability = null;
+let doctorMap = {};
+
+// Load doctors based on selected clinic
+function loadDoctors(hospitalId) {
+  const docGroup = document.getElementById('doctor-group');
+  const docSelect = document.getElementById('doctor_id');
+  const bioDiv = document.getElementById('doctor-bio');
+  
+  // Reset all subsequent fields
+  docSelect.innerHTML = '<option value="">-- Select Specialist / Doctor --</option>';
+  bioDiv.innerHTML = '';
+  document.getElementById('date-group').style.display = 'none';
+  document.getElementById('slots-group').style.display = 'none';
+  document.getElementById('patient-details').style.display = 'none';
+  
+  if (!hospitalId) {
+    docGroup.style.display = 'none';
+    return;
+  }
+  
+  fetch(`/api/doctors/${hospitalId}`)
+    .then(r => r.json())
+    .then(doctors => {
+      doctorMap = {};
+      doctors.forEach(d => {
+        doctorMap[d.id] = d;
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = `${d.name} (${d.specialty})`;
+        docSelect.appendChild(opt);
+      });
+      docGroup.style.display = 'block';
+    })
+    .catch(err => console.error("Error loading doctors:", err));
+}
+
+// Load availability for the selected doctor
+function loadAvailability(doctorId) {
+  const dateGroup = document.getElementById('date-group');
+  const bioDiv = document.getElementById('doctor-bio');
+  
+  document.getElementById('slots-group').style.display = 'none';
+  document.getElementById('patient-details').style.display = 'none';
+  
+  if (!doctorId) {
+    dateGroup.style.display = 'none';
+    bioDiv.innerHTML = '';
+    return;
+  }
+  
+  const doc = doctorMap[doctorId];
+  if (doc && doc.bio) {
+    bioDiv.innerHTML = `<strong>Bio:</strong> ${doc.bio}`;
+  }
+  
+  fetch(`/api/doctor-availability/${doctorId}`)
+    .then(r => r.json())
+    .then(avail => {
+      currentDoctorAvailability = avail;
+      dateGroup.style.display = 'block';
+    })
+    .catch(err => console.error("Error loading availability:", err));
+}
+
+// Populate time slots dropdown upon date selection
+function updateAvailabilitySlots() {
+  const dateVal = document.getElementById('date').value;
+  const slotsGroup = document.getElementById('slots-group');
+  const timeSelect = document.getElementById('time_slot');
+  const details = document.getElementById('patient-details');
+  
+  timeSelect.innerHTML = '<option value="">Select time</option>';
+  details.style.display = 'none';
+  
+  if (!dateVal || !currentDoctorAvailability) {
+    slotsGroup.style.display = 'none';
+    return;
+  }
+  
+  // Find day of week
+  const dateObj = new Date(dateVal);
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayName = days[dateObj.getDay()];
+  
+  const slots = currentDoctorAvailability[dayName] || [];
+  
+  if (slots.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = "";
+    opt.disabled = true;
+    opt.textContent = "No slots available";
+    timeSelect.appendChild(opt);
+    slotsGroup.style.display = 'block';
+    return;
+  }
+  
+  slots.forEach(slot => {
+    const opt = document.createElement('option');
+    opt.value = slot;
+    opt.textContent = slot;
+    timeSelect.appendChild(opt);
+  });
+  
+  slotsGroup.style.display = 'block';
+  details.style.display = 'block'; // Reveal final details
+}
+
+// Full page connecting 3D-like particle grid wave background
+function initWaveBackground() {
+  const canvas = document.getElementById('wave-bg-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+
+  // Particle grid variables
+  const particles = [];
+  const rows = 14;
+  const cols = 28;
+  const spacingX = width / cols;
+  const spacingY = height / rows;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      particles.push({
+        baseX: c * spacingX + spacingX / 2,
+        baseY: r * spacingY + spacingY / 2,
+        x: 0,
+        y: 0,
+        r: Math.random() * 1.5 + 1.0,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+  }
+
+  let step = 0;
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.fillStyle = 'rgba(0, 240, 255, 0.18)';
+    particles.forEach(p => {
+      // Calculate 3D sine wave offset
+      const distToCenter = Math.hypot(p.baseX - width / 2, p.baseY - height / 2);
+      const wave = Math.sin(distToCenter * 0.006 - step) * 15;
+      
+      p.x = p.baseX + Math.cos(p.phase + step * 0.5) * 5;
+      p.y = p.baseY + wave;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    step += 0.02;
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  });
+}
+
+// Three.js 3D Eyeball left side setup
+function initThreeEyeball() {
+  const container = document.getElementById('three-eyeball-canvas');
+  if (!container || typeof THREE === 'undefined') return;
+
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+  camera.position.z = 4.2;
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  const eyeGroup = new THREE.Group();
+  scene.add(eyeGroup);
+
+  // 1. Sclera: white sphere with capillary vessels
+  const scleraCanvas = document.createElement('canvas');
+  scleraCanvas.width = 512;
+  scleraCanvas.height = 256;
+  const sCtx = scleraCanvas.getContext('2d');
+  sCtx.fillStyle = '#f5f7fb';
+  sCtx.fillRect(0, 0, 512, 256);
+  sCtx.strokeStyle = 'rgba(255, 0, 85, 0.12)';
+  sCtx.lineWidth = 1.0;
+  for (let i = 0; i < 20; i++) {
+    sCtx.beginPath();
+    sCtx.moveTo(Math.random() * 512, Math.random() * 256);
+    sCtx.bezierCurveTo(
+      Math.random() * 512, Math.random() * 256,
+      Math.random() * 512, Math.random() * 256,
+      Math.random() * 512, Math.random() * 256
+    );
+    sCtx.stroke();
+  }
+  const scleraTexture = new THREE.CanvasTexture(scleraCanvas);
+  const scleraGeo = new THREE.SphereGeometry(1.4, 32, 32);
+  const scleraMat = new THREE.MeshPhongMaterial({
+    map: scleraTexture,
+    shininess: 45
+  });
+  const scleraMesh = new THREE.Mesh(scleraGeo, scleraMat);
+  eyeGroup.add(scleraMesh);
+
+  // 2. Iris: electric blue fiber texture
+  const irisCanvas = document.createElement('canvas');
+  irisCanvas.width = 256;
+  irisCanvas.height = 256;
+  const iCtx = irisCanvas.getContext('2d');
+  const radialBase = iCtx.createRadialGradient(128, 128, 5, 128, 128, 120);
+  radialBase.addColorStop(0, '#000000');
+  radialBase.addColorStop(0.2, '#02040c');
+  radialBase.addColorStop(0.38, '#0055ff');
+  radialBase.addColorStop(0.72, '#00f0ff');
+  radialBase.addColorStop(1, '#010821');
+  iCtx.fillStyle = radialBase;
+  iCtx.fillRect(0, 0, 256, 256);
+
+  iCtx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+  iCtx.lineWidth = 0.5;
+  for (let k = 0; k < 180; k++) {
+    const angle = (k * 2 * Math.PI) / 180;
+    const startRadius = 38 + Math.random() * 10;
+    const endRadius = 100 + Math.random() * 15;
+    const x1 = 128 + Math.cos(angle) * startRadius;
+    const y1 = 128 + Math.sin(angle) * startRadius;
+    const x2 = 128 + Math.cos(angle) * endRadius;
+    const y2 = 128 + Math.sin(angle) * endRadius;
+    iCtx.beginPath();
+    iCtx.moveTo(x1, y1);
+    iCtx.lineTo(x2, y2);
+    iCtx.stroke();
+  }
+
+  const irisTexture = new THREE.CanvasTexture(irisCanvas);
+  const irisGeo = new THREE.SphereGeometry(1.405, 32, 32, 0, Math.PI * 2, 0, Math.PI / 4.5);
+  const irisMat = new THREE.MeshBasicMaterial({
+    map: irisTexture,
+    transparent: true,
+    opacity: 0.95
+  });
+  const irisMesh = new THREE.Mesh(irisGeo, irisMat);
+  irisMesh.rotation.x = Math.PI / 2;
+  eyeGroup.add(irisMesh);
+
+  // 3. Cornea: glossy transparent cover
+  const corneaGeo = new THREE.SphereGeometry(1.41, 32, 32);
+  const corneaMat = new THREE.MeshPhongMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.08,
+    shininess: 90,
+    specular: 0xffffff
+  });
+  const corneaMesh = new THREE.Mesh(corneaGeo, corneaMat);
+  eyeGroup.add(corneaMesh);
+
+  // Add lights
+  const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+  dirLight.position.set(3, 3, 5);
+  scene.add(dirLight);
+
+  const ambLight = new THREE.AmbientLight(0x0a0f2b, 1.5);
+  scene.add(ambLight);
+
+  // Gaze cursor tracking
+  let targetRotationX = 0;
+  let targetRotationY = 0;
+  
+  window.addEventListener('mousemove', function(e) {
+    const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
+    const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+    targetRotationY = x * 0.45;
+    targetRotationX = -y * 0.35;
+  });
+
+  const animateEye = () => {
+    requestAnimationFrame(animateEye);
+    eyeGroup.rotation.y += (targetRotationY - eyeGroup.rotation.y) * 0.05;
+    eyeGroup.rotation.x += (targetRotationX - eyeGroup.rotation.x) * 0.05;
+    irisMat.opacity = 0.84 + Math.sin(Date.now() * 0.003) * 0.12;
+    renderer.render(scene, camera);
+  };
+  animateEye();
+
+  window.addEventListener('resize', () => {
+    if (!container) return;
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  });
+}
+</script>
+{% endblock %}

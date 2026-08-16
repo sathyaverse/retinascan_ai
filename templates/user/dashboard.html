@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('dashboard') }} — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>{{ t('welcome') }}, {{ current_user.name.split()[0] }}</h1>
+  <p>Your ophthalmic diagnostics hub and telemetry records</p>
+  <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+    <a href="{{ url_for('book_appointment') }}" class="btn btn-outline"><i class="fa-solid fa-calendar-check"></i> {{ t('book_appointment') }}</a>
+    <a href="{{ url_for('upload') }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> {{ t('new_scan') }}</a>
+  </div>
+</div>
+
+<!-- Stats row -->
+<div class="stats-grid">
+  <div class="stat-card stat-blue">
+    <div class="stat-value">{{ total_scans }}</div>
+    <div class="stat-label">{{ t('total_scans') }}</div>
+  </div>
+  <div class="stat-card stat-green">
+    <div class="stat-value">{{ processed }}</div>
+    <div class="stat-label">{{ t('processed') }}</div>
+  </div>
+  <div class="stat-card stat-orange">
+    <div class="stat-value">{{ total_scans - processed }}</div>
+    <div class="stat-label">{{ t('pending') }}</div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <!-- Chart -->
+  <div class="card">
+    <h3><i class="fa-solid fa-chart-pie" style="color:var(--neon-cyan);"></i> {{ t('severity_dist') }}</h3>
+    <div style="position: relative; height: 230px; width: 100%; display: flex; align-items: center; justify-content: center;">
+      <canvas id="severityChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Upcoming Appointments -->
+  <div class="card">
+    <h3><i class="fa-solid fa-calendar-days" style="color:var(--neon-purple);"></i> {{ t('my_appointments') }}</h3>
+    {% if appointments %}
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{{ t('date') }}</th>
+            <th>Doctor</th>
+            <th>Hospital</th>
+            <th>{{ t('status') }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for appt in appointments %}
+          <tr>
+            <td>
+              <strong>{{ appt.date.strftime('%d %b %Y') }}</strong><br/>
+              <small style="color:var(--text-secondary);">{{ appt.time_slot }}</small>
+            </td>
+            <td>{{ appt.doctor.name }}</td>
+            <td>{{ appt.hospital_rel.name }}</td>
+            <td>
+              <span class="status-pill status-{{ appt.status }}">
+                {{ appt.status }}
+              </span>
+            </td>
+            <td>
+              <a href="{{ url_for('telemedicine', scan_id=(scans[0].id if scans else 1)) }}" class="btn btn-sm btn-primary" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
+                <i class="fa-solid fa-video"></i> Video
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 1.5rem 0;">
+      <p style="margin-bottom: 1rem; font-size: 0.88rem;">No upcoming clinical appointments scheduled.</p>
+      <a href="{{ url_for('book_appointment') }}" class="btn btn-sm btn-outline"><i class="fa-solid fa-calendar-check"></i> {{ t('book_appointment') }}</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent scans -->
+  <div class="card" style="grid-column: span 2;">
+    <h3><i class="fa-solid fa-history" style="color:var(--neon-pink);"></i> {{ t('recent_scans') }}</h3>
+    {% if scans %}
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{{ t('date') }}</th>
+            <th>{{ t('eye') }}</th>
+            <th>{{ t('result') }}</th>
+            <th>{{ t('status') }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for scan in scans %}
+          <tr>
+            <td><strong>{{ scan.created_at.strftime('%d %b %Y') }}</strong><br/><small style="color:var(--text-secondary);">{{ scan.created_at.strftime('%I:%M %p') }}</small></td>
+            <td>{{ t('left_eye') if scan.eye_side == 'Left' else (t('right_eye') if scan.eye_side == 'Right' else scan.eye_side) }}</td>
+            <td>
+              {% if scan.is_normal %}
+                <span class="badge badge-no-dr">{{ t('normal') }}</span>
+              {% else %}
+                <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                  {% if scan.is_dr %}<span class="badge badge-severe-dr">{{ t('dr') }}: {{ scan.predicted_class }}</span>{% endif %}
+                  {% if scan.is_glaucoma %}<span class="badge badge-severe-dr">{{ t('glaucoma') }}</span>{% endif %}
+                  {% if scan.is_amd %}<span class="badge badge-severe-dr">{{ t('amd') }}</span>{% endif %}
+                  {% if scan.is_cataract %}<span class="badge badge-severe-dr">Cataract</span>{% endif %}
+                </div>
+              {% endif %}
+            </td>
+            <td>
+              <span class="status-pill status-{{ scan.status }}">
+                {{ scan.status }}
+              </span>
+            </td>
+            <td><a href="{{ url_for('results', scan_id=scan.id) }}" class="link"><i class="fa-solid fa-circle-info"></i> {{ t('view') }}</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p>{{ t('no_scans') }}</p>
+      <a href="{{ url_for('upload') }}" class="btn btn-primary"><i class="fa-solid fa-file-arrow-up"></i> {{ t('upload') }}</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const chartData = {{ chart_data | safe }};
+const labels = Object.keys(chartData);
+const values = Object.values(chartData);
+// Neon stages palette matching CSS variables
+const colors = ['#00ff66', '#ffd600', '#ff7a00', '#ff007a', '#bd00ff'];
+const ctx = document.getElementById('severityChart');
+
+if (ctx && labels.length > 0) {
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderWidth: 2,
+        borderColor: 'rgba(6, 9, 19, 0.8)',
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#9ca3af',
+            font: { family: 'Space Grotesk', size: 11 },
+            padding: 15
+          }
+        }
+      }
+    }
+  });
+} else if (ctx) {
+  ctx.parentElement.innerHTML = '<p style="text-align:center;color:#6b7280;font-family:\'Space Grotesk\',sans-serif;margin-top:2rem;">No diagnostic metrics logged yet.</p>';
+}
+</script>
+{% endblock %}

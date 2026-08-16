@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+{% block title %}Family Eye Health Dashboard — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1><i class="fa-solid fa-people-roof" style="color:var(--neon-green);"></i> Family Eye Health Dashboard</h1>
+    <p>Consolidated ophthalmic wellness profiles, screening compliance checklists, and risk mapping</p>
+  </div>
+  <div>
+    <button onclick="openModal('addFamilyModal')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Family Member</button>
+  </div>
+</div>
+
+<!-- Family wellness aggregated metrics -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+  <div class="stat-card stat-blue">
+    <!-- Circular gauge for family index -->
+    <div style="display: flex; align-items: center; gap: 1.5rem;">
+      <div style="position: relative; width: 80px; height: 80px;">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6"></circle>
+          <circle cx="40" cy="40" r="34" fill="none" stroke="var(--neon-green)" stroke-width="6"
+                  stroke-dasharray="213" stroke-dashoffset="{{ 213 - (213 * family_index / 100)|round|int }}"
+                  stroke-linecap="round" style="transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s;"></circle>
+        </svg>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Orbitron', sans-serif; font-size: 1.1rem; font-weight: 800; color: white;">
+          {{ family_index }}%
+        </div>
+      </div>
+      <div>
+        <div class="stat-value">Index: {{ 'Stable' if family_index >= 75 else 'Critical' }}</div>
+        <div class="stat-label">Family Ocular Wellness Rating</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card stat-pink">
+    <div class="stat-value" style="color: var(--neon-pink);">{{ anomalies_count }}</div>
+    <div class="stat-label">Active Anomalies Detected</div>
+  </div>
+
+  <div class="stat-card stat-green">
+    <div class="stat-value" style="color: var(--neon-cyan);">{{ member_summaries|length + 1 }}</div>
+    <div class="stat-label">Total Monitored Profiles</div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <!-- Family Members Registry Grid -->
+  <div class="card" style="grid-column: span 2;">
+    <h3><i class="fa-solid fa-address-book" style="color:var(--neon-cyan);"></i> Monitored Patient Profiles</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+      
+      <!-- Primary User Card -->
+      <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); margin: 0; padding: 1.5rem; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between;">
+        <span class="badge badge-no-dr" style="position: absolute; top: 1rem; right: 1rem; background: rgba(0, 242, 254, 0.1); color: var(--neon-cyan); border-color: var(--neon-cyan);">Account Holder</span>
+        
+        <div>
+          <h4 style="margin: 0 0 0.5rem 0; font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; color: white;">{{ current_user.name }} (Self)</h4>
+          <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.25rem;">
+            <span>Age: <strong>{{ current_user.age or 'N/A' }}</strong> | Gender: <strong>{{ current_user.gender or 'N/A' }}</strong></span>
+            <span>Diabetes: <strong>{{ current_user.diabetes_type or 'None' }}</strong> | HbA1c: <strong>{{ current_user.hba1c or 'N/A' }}%</strong></span>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-glass); padding-top: 1rem; margin-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; margin-bottom: 1rem;">
+            <span style="color: var(--text-secondary);">Latest Scan:</span>
+            {% set user_scans = all_family_scans|selectattr('family_member_id', 'none')|list %}
+            {% if user_scans %}
+              {% set latest = user_scans[0] %}
+              <span class="badge {% if latest.is_normal %}badge-no-dr{% else %}badge-severe-dr{% endif %}">
+                {{ latest.predicted_class or 'Anomalous' }}
+              </span>
+            {% else %}
+              <span style="color: var(--text-secondary); font-style: italic;">No scans recorded</span>
+            {% endif %}
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="{{ url_for('upload') }}" class="btn btn-sm btn-outline btn-full"><i class="fa-solid fa-file-arrow-up"></i> Scan</a>
+            {% if user_scans %}
+            <a href="{{ url_for('results', scan_id=user_scans[0].id) }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-eye"></i> View</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Family Members List -->
+      {% for summary in member_summaries %}
+      <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); margin: 0; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <h4 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; color: white;">{{ summary.member.name }}</h4>
+            <span class="status-pill status-processed" style="background: rgba(189, 0, 255, 0.1); color: var(--neon-purple); border: 1px solid var(--neon-purple); font-size: 0.7rem; padding: 0.1rem 0.4rem;">
+              {{ summary.member.relation }}
+            </span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.25rem;">
+            <span>Age: <strong>{{ summary.member.age }}</strong> | Gender: <strong>{{ summary.member.gender }}</strong></span>
+            <span>Diabetes: <strong>{{ summary.member.diabetes_type or 'None' }}</strong> | HbA1c: <strong>{{ summary.member.hba1c or 'N/A' }}%</strong></span>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-glass); padding-top: 1rem; margin-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; margin-bottom: 1rem;">
+            <span style="color: var(--text-secondary);">Latest Scan:</span>
+            {% if summary.latest_scan %}
+              <span class="badge {% if summary.latest_scan.is_normal %}badge-no-dr{% else %}badge-severe-dr{% endif %}">
+                {{ summary.latest_scan.predicted_class or 'Anomalous' }}
+              </span>
+            {% else %}
+              <span style="color: var(--text-secondary); font-style: italic;">No scans recorded</span>
+            {% endif %}
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <a href="{{ url_for('upload', profile_id=summary.member.id) }}" class="btn btn-sm btn-outline btn-full"><i class="fa-solid fa-file-arrow-up"></i> Scan</a>
+            {% if summary.latest_scan %}
+            <a href="{{ url_for('results', scan_id=summary.latest_scan.id) }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-eye"></i> View</a>
+            {% endif %}
+            <form action="{{ url_for('delete_family_member', member_id=summary.member.id) }}" method="POST" style="margin:0;" onsubmit="return confirm('Remove family profile for {{ summary.member.name }}? This will unlink their scans.');">
+              <button type="submit" class="btn btn-sm btn-outline" style="border-color: rgba(255,0,0,0.4); color: red; width:32px; height:32px; padding:0; display:inline-flex; align-items:center; justify-content:center;" title="Delete Profile">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+
+  <!-- Screening Due Compliance Checklist -->
+  <div class="card">
+    <h3><i class="fa-solid fa-clipboard-check" style="color:var(--neon-pink);"></i> Screening Compliance</h3>
+    <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+      Clinical screening checklists automatically generated from risk profiles (Normal = 12M, Moderate = 6M, High Risk = 3M).
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <!-- Main User Compliance -->
+      {% set user_scans = all_family_scans|selectattr('family_member_id', 'none')|list %}
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: rgba(255,255,255,0.01); border: 1px solid var(--border-glass); border-radius: 8px;">
+        <div>
+          <strong style="color: white; font-size: 0.9rem;">{{ current_user.name }} (Self)</strong>
+          <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem;">
+            {% if user_scans %}
+              Next screening due by: <strong>{{ user_due_date }}</strong>
+              {% if user_is_overdue %}
+                <div style="font-size: 0.75rem; color: var(--neon-pink); margin-top: 0.15rem;"><i class="fa-solid fa-triangle-exclamation"></i> Screening is Overdue!</div>
+              {% endif %}
+            {% else %}
+              <span style="color: var(--neon-pink);"><i class="fa-solid fa-triangle-exclamation"></i> Screening Overdue (No scans)</span>
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          {% if user_scans and not user_is_overdue %}
+            <span class="status-pill status-processed" style="font-size:0.75rem;">Compliant</span>
+          {% else %}
+            <span class="status-pill status-pending" style="font-size:0.75rem; background: rgba(255, 0, 122, 0.1); color: var(--neon-pink); border-color: var(--neon-pink);">Action Required</span>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- Family Members Compliance -->
+      {% for summary in member_summaries %}
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: rgba(255,255,255,0.01); border: 1px solid var(--border-glass); border-radius: 8px;">
+        <div>
+          <strong style="color: white; font-size: 0.9rem;">{{ summary.member.name }}</strong>
+          <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem;">
+            {% if summary.latest_scan %}
+              Next screening due: <strong>{{ summary.due_date }}</strong>
+            </div>
+            {% if summary.is_overdue %}
+              <div style="font-size: 0.75rem; color: var(--neon-pink); margin-top: 0.15rem;"><i class="fa-solid fa-triangle-exclamation"></i> Screening is Overdue!</div>
+            {% endif %}
+            {% else %}
+              <span style="color: var(--neon-pink);"><i class="fa-solid fa-triangle-exclamation"></i> Screening Overdue (No scans)</span>
+            {% endif %}
+        </div>
+        <div>
+          {% if summary.latest_scan and not summary.is_overdue %}
+            <span class="status-pill status-processed" style="font-size:0.75rem;">Compliant</span>
+          {% else %}
+            <span class="status-pill status-pending" style="font-size:0.75rem; background: rgba(255, 0, 122, 0.1); color: var(--neon-pink); border-color: var(--neon-pink);">Action Required</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Consolidated Scan History timeline -->
+  <div class="card" style="grid-column: span 3;">
+    <h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--neon-purple);"></i> Consolidated Family Screening Log</h3>
+    {% if all_family_scans %}
+    <div class="table-container" style="margin-top: 1rem;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Patient</th>
+            <th>Relationship</th>
+            <th>Eye Side</th>
+            <th>Diagnosis Staging</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for scan in all_family_scans %}
+          <tr>
+            <td>
+              <strong>{{ scan.created_at.strftime('%d %b %Y') }}</strong><br/>
+              <small style="color: var(--text-secondary);">{{ scan.created_at.strftime('%I:%M %p') }}</small>
+            </td>
+            <td>
+              <strong>{{ scan.family_member.name if scan.family_member_id else current_user.name }}</strong>
+            </td>
+            <td>
+              <span style="color: var(--text-secondary);">{{ scan.family_member.relation if scan.family_member_id else 'Self' }}</span>
+            </td>
+            <td>{{ scan.eye_side }}</td>
+            <td>
+              {% if scan.is_normal %}
+                <span class="badge badge-no-dr">Normal Healthy</span>
+              {% else %}
+                <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                  {% if scan.is_dr %}<span class="badge badge-severe-dr">DR: {{ scan.predicted_class }}</span>{% endif %}
+                  {% if scan.is_glaucoma %}<span class="badge badge-severe-dr">Glaucoma</span>{% endif %}
+                  {% if scan.is_amd %}<span class="badge badge-severe-dr">AMD</span>{% endif %}
+                  {% if scan.is_cataract %}<span class="badge badge-severe-dr">Cataract</span>{% endif %}
+                </div>
+              {% endif %}
+            </td>
+            <td>
+              <span class="status-pill status-{{ scan.status }}">{{ scan.status }}</span>
+            </td>
+            <td>
+              <a href="{{ url_for('results', scan_id=scan.id) }}" class="link"><i class="fa-solid fa-circle-info"></i> Details</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 2rem 0;">
+      <p>No screening records stored yet for the family group.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Add Family Profile Modal -->
+<div id="addFamilyModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(3,5,12,0.85); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center;">
+  <div class="card" style="width: 100%; max-width: 500px; border: 1px solid var(--neon-cyan); box-shadow: var(--shadow-neon-cyan); margin: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem; margin-bottom: 1.5rem;">
+      <h3 style="margin: 0; font-family: 'Space Grotesk', sans-serif; color: white;"><i class="fa-solid fa-user-plus" style="color:var(--neon-cyan);"></i> Add Family Profile</h3>
+      <button onclick="closeModal('addFamilyModal')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary);">&times;</button>
+    </div>
+
+    <form action="{{ url_for('add_family_member') }}" method="POST">
+      <div class="form-group">
+        <label>Full Name *</label>
+        <input type="text" name="name" required placeholder="John Doe Jr." style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 6px; color: white; outline: none; box-sizing: border-box;"/>
+      </div>
+      
+      <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="form-group" style="flex: 1;">
+          <label>Relationship *</label>
+          <select name="relation" required style="width: 100%; padding: 0.75rem; background: rgba(6,9,19,0.9); border: 1px solid var(--border-glass); border-radius: 6px; color: white; outline: none;">
+            <option value="Spouse">Spouse</option>
+            <option value="Child">Child</option>
+            <option value="Parent">Parent</option>
+            <option value="Sibling">Sibling</option>
+            <option value="Grandparent">Grandparent</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>Gender *</label>
+          <select name="gender" required style="width: 100%; padding: 0.75rem; background: rgba(6,9,19,0.9); border: 1px solid var(--border-glass); border-radius: 6px; color: white; outline: none;">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="form-group" style="flex: 1;">
+          <label>Age (Years) *</label>
+          <input type="number" name="age" required min="1" max="120" placeholder="18" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 6px; color: white; outline: none; box-sizing: border-box;"/>
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>HbA1c Level (%)</label>
+          <input type="number" step="0.1" name="hba1c" placeholder="6.5" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 6px; color: white; outline: none; box-sizing: border-box;"/>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label>Diabetes Classification (if any)</label>
+        <select name="diabetes_type" style="width: 100%; padding: 0.75rem; background: rgba(6,9,19,0.9); border: 1px solid var(--border-glass); border-radius: 6px; color: white; outline: none;">
+          <option value="">None / Non-Diabetic</option>
+          <option value="Type 1">Type 1 Diabetes Mellitus</option>
+          <option value="Type 2">Type 2 Diabetes Mellitus</option>
+          <option value="Gestational">Gestational Diabetes</option>
+          <option value="Pre-diabetic">Pre-diabetic</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+        <button type="button" onclick="closeModal('addFamilyModal')" class="btn btn-outline" style="flex: 1;">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="flex: 1;">Create Profile</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+  }
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+</script>
+
+{% endblock %}

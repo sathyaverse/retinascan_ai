@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}OTP Verification — RetinaScan AI{% endblock %}
+{% block content %}
+<style>
+  /* Overrides for global base.html components */
+  .navbar, .footer {
+    display: none !important;
+  }
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    background: #030511 !important;
+  }
+  body {
+    overflow-x: hidden !important;
+    background: #030511 !important;
+  }
+  .auth-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at 30% 30%, #070e28 0%, #030511 80%);
+    width: 100%;
+  }
+</style>
+<div class="auth-container">
+  <div class="auth-card" style="box-shadow: 0 0 25px rgba(189, 0, 255, 0.15), var(--shadow-glass); border-color: rgba(189, 0, 255, 0.2);">
+    <div class="auth-header">
+      <span class="auth-icon" style="background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"><i class="fa-solid fa-shield-halved"></i></span>
+      <h2 style="font-family:'Space Grotesk',sans-serif; color:white;">OTP Verification</h2>
+      <p>A verification code has been dispatched to your phone.</p>
+    </div>
+    
+    <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--border-glass); border-radius: var(--radius-md); padding: 0.75rem 1rem; text-align: center; margin-bottom: 1.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+      <i class="fa-solid fa-terminal" style="color:var(--neon-purple); margin-right:0.25rem;"></i> Simulator Console: OTP code generated is <strong style="color:white; font-family:monospace; background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px;">{{ otp_code_sim }}</strong>
+    </div>
+
+    <form method="POST" action="{{ url_for('verify_otp') }}">
+      <div class="form-group" style="text-align:center;">
+        <label for="otp" style="text-align:left;"><i class="fa-solid fa-key"></i> 6-Digit Verification Passcode</label>
+        <input type="text" id="otp" name="otp" placeholder="123456" maxlength="6" required style="text-align:center; font-family:'Orbitron',sans-serif; font-size:1.6rem; letter-spacing:0.75rem; font-weight:700; padding:0.5rem; width:100%; border-color:var(--neon-purple);"/>
+      </div>
+      
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:0.75rem; background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink)); border-color:var(--neon-pink);">
+        <i class="fa-solid fa-lock-open"></i> Verify & Authenticate
+      </button>
+    </form>
+    
+    <p class="auth-link">Didn't receive the code? <a href="/resend-otp" class="link" style="color:var(--neon-purple);">Resend OTP</a></p>
+  </div>
+</div>
+{% endblock %}

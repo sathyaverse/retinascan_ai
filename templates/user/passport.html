@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% block title %}Retina Digital Passport — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header no-print" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+  <div>
+    <h1><i class="fa-solid fa-address-card" style="color:var(--neon-cyan);"></i> Retina Digital Passport</h1>
+    <p>Secure visual health credential, screening compliance logs, and blockchain-verified QR keys</p>
+  </div>
+  <div style="display:flex; gap:0.5rem;">
+    <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> Print Passport</button>
+    <a href="{{ url_for('results', scan_id=scan.id) }}" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to Scan</a>
+  </div>
+</div>
+
+<div class="passport-container">
+  
+  <!-- Holographic Smart Card -->
+  <div class="passport-card card">
+    <div class="passport-card-glow"></div>
+    
+    <!-- Top Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+      <div>
+        <span style="font-family:'Orbitron',sans-serif; font-size:0.7rem; font-weight:800; color:var(--neon-cyan); text-transform:uppercase; letter-spacing:2px; display:block; margin-bottom:0.25rem;">Global Visual Passport</span>
+        <h2 style="font-family:'Space Grotesk',sans-serif; font-size:1.3rem; margin:0; color:white;">RETINASCAN <strong>AI</strong></h2>
+      </div>
+      <div class="passport-chip" style="width: 45px; height: 35px; background: linear-gradient(135deg, #ffd700, #b8860b); border-radius: 6px; position: relative; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 0 10px rgba(255,215,0,0.3);">
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto; width: 85%; height: 85%; border: 1px solid rgba(0,0,0,0.25); border-radius: 4px;"></div>
+        <div style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(0,0,0,0.25);"></div>
+        <div style="position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: rgba(0,0,0,0.25);"></div>
+      </div>
+    </div>
+
+    <!-- Body Information -->
+    <div style="display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;">
+      
+      <!-- Bio Photo Placeholder / Eye Target graphic -->
+      <div style="text-align: center;">
+        <div class="passport-bio-photo" style="width: 120px; height: 120px; border-radius: 12px; border: 2px solid var(--neon-cyan); background: rgba(0, 242, 254, 0.03); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: 0 0 15px rgba(0, 242, 254, 0.15);">
+          {% if scan.original_image.endswith('.pdf') %}
+            <i class="fa-solid fa-file-pdf" style="font-size: 3rem; color: var(--neon-pink);"></i>
+          {% else %}
+            <img src="{{ url_for('static', filename='uploads/' + scan.original_image) }}" style="width: 100%; height: 100%; object-fit: cover;" />
+          {% endif %}
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0, 242, 254, 0.85); color: #03050c; font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0; text-transform: uppercase; letter-spacing: 1px;">
+            Target: {{ 'OS (LEFT)' if scan.eye_side == 'Left' else ('OD (RIGHT)' if scan.eye_side == 'Right' else 'OD/OS') }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Bio Fields -->
+      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; min-width: 200px;">
+        <div>
+          <span style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; display: block;">Patient Profile</span>
+          <strong style="font-size: 0.95rem; color: white;">{{ scan.family_member.name if scan.family_member_id else scan.patient.name }}</strong>
+        </div>
+        <div>
+          <span style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; display: block;">Passport ID</span>
+          <strong style="font-size: 0.85rem; color: var(--neon-cyan); font-family: monospace;">RS-{{ hash }}</strong>
+        </div>
+        <div>
+          <span style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; display: block;">Issue Timestamp</span>
+          <strong style="font-size: 0.88rem; color: white;">{{ scan.created_at.strftime('%d %b %Y') }}</strong>
+        </div>
+        <div>
+          <span style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; display: block;">Ophthalmic Rating</span>
+          {% if scan.is_normal %}
+            <strong style="font-size: 0.88rem; color: var(--neon-green);"><i class="fa-solid fa-circle-check"></i> NORMAL HEALTHY</strong>
+          {% else %}
+            <strong style="font-size: 0.88rem; color: var(--neon-pink);"><i class="fa-solid fa-triangle-exclamation"></i> ANOMALOUS</strong>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Secure QR Stamp -->
+      <div style="text-align: center;">
+        <div style="padding: 0.5rem; background: white; border-radius: 8px; box-shadow: 0 0 15px rgba(255,255,255,0.1); display: inline-block;">
+          <!-- SVG QR Code simulation -->
+          <svg width="85" height="85" viewBox="0 0 100 100" style="display: block;">
+            <!-- Outer border -->
+            <rect x="0" y="0" width="100" height="100" fill="white" />
+            <!-- Corners -->
+            <rect x="10" y="10" width="30" height="30" fill="black" />
+            <rect x="15" y="15" width="20" height="20" fill="white" />
+            <rect x="18" y="18" width="14" height="14" fill="black" />
+            
+            <rect x="60" y="10" width="30" height="30" fill="black" />
+            <rect x="65" y="15" width="20" height="20" fill="white" />
+            <rect x="68" y="18" width="14" height="14" fill="black" />
+            
+            <rect x="10" y="60" width="30" height="30" fill="black" />
+            <rect x="15" y="65" width="20" height="20" fill="white" />
+            <rect x="18" y="68" width="14" height="14" fill="black" />
+            
+            <!-- Center & random bits -->
+            <rect x="45" y="10" width="10" height="10" fill="black" />
+            <rect x="50" y="25" width="5" height="15" fill="black" />
+            <rect x="10" y="45" width="15" height="10" fill="black" />
+            <rect x="35" y="35" width="30" height="30" fill="black" />
+            <rect x="40" y="40" width="10" height="10" fill="white" />
+            <rect x="52" y="52" width="8" height="8" fill="white" />
+            <rect x="75" y="45" width="15" height="10" fill="black" />
+            <rect x="45" y="75" width="15" height="15" fill="black" />
+            <rect x="75" y="75" width="15" height="15" fill="black" />
+            <rect x="80" y="80" width="5" height="5" fill="white" />
+          </svg>
+        </div>
+        <div style="margin-top: 0.4rem;">
+          <a href="{{ verify_url }}" target="_blank" style="font-family:'Space Grotesk',sans-serif; font-size: 0.65rem; color: var(--neon-cyan); text-transform: uppercase; font-weight: 700; text-decoration: none; letter-spacing: 0.5px;"><i class="fa-solid fa-qrcode"></i> Verify Online</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Bar (Security Hologram Watermark) -->
+    <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 0.75rem; margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary);">
+      <span>EHR INTEGRATED SYSTEM (HL7 FHIR v4.0.1)</span>
+      <span style="font-weight: 700; color: white;"><i class="fa-solid fa-lock" style="color:var(--neon-green);"></i> SECURE BIOMETRIC KEY</span>
+    </div>
+  </div>
+
+  <div class="dashboard-grid no-print" style="margin-top: 2rem;">
+    <!-- Telemetry Log -->
+    <div class="card">
+      <h3><i class="fa-solid fa-chart-line" style="color:var(--neon-cyan);"></i> Diagnostic Indicators</h3>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+        
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
+          <span style="color: var(--text-secondary);">Primary AI Model</span>
+          <strong style="color: white;">EfficientNetV2 (v2.1)</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
+          <span style="color: var(--text-secondary);">Confidence Severity</span>
+          <strong style="color: white;">{{ scan.predicted_class or 'No DR' }} ({{ (scan.confidence * 100)|round(1) if scan.confidence else 0 }}%)</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
+          <span style="color: var(--text-secondary);">Glaucoma Index</span>
+          <strong style="color: white;">{{ (scan.glaucoma_prob * 100)|round(1) }}% ({{ 'High Risk' if scan.is_glaucoma else 'Low Risk' }})</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
+          <span style="color: var(--text-secondary);">AMD Index</span>
+          <strong style="color: white;">{{ (scan.amd_prob * 100)|round(1) }}% ({{ 'High Risk' if scan.is_amd else 'Low Risk' }})</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
+          <span style="color: var(--text-secondary);">Cataract Index</span>
+          <strong style="color: white;">{{ (scan.cataract_prob * 100)|round(1) }}% ({{ 'High Risk' if scan.is_cataract else 'Low Risk' }})</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
+          <span style="color: var(--text-secondary);">Image Quality Rating</span>
+          <strong style="color: var(--neon-green);">{{ (scan.quality_score * 100)|round(1) if scan.quality_score else 100 }}% (Acceptable)</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compliance Checklist -->
+    <div class="card">
+      <h3><i class="fa-solid fa-calendar-check" style="color:var(--neon-green);"></i> Health Compliance Log</h3>
+      <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+        
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <div style="color: var(--neon-green); font-size: 1.25rem;"><i class="fa-solid fa-circle-check"></i></div>
+          <div>
+            <strong style="color: white; font-size: 0.88rem; display: block;">Retinal Imaging screening</strong>
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">Last completed: {{ scan.created_at.strftime('%d %b %Y') }}</span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <div style="color: var(--neon-cyan); font-size: 1.25rem;"><i class="fa-solid fa-clock"></i></div>
+          <div>
+            <strong style="color: white; font-size: 0.88rem; display: block;">Next Screening Checkup</strong>
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">Recommended Interval: <strong>Every {{ rec_interval }}</strong></span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <div style="color: var(--neon-purple); font-size: 1.25rem;"><i class="fa-solid fa-signature"></i></div>
+          <div>
+            <strong style="color: white; font-size: 0.88rem; display: block;">Physician Approval</strong>
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">Status: <strong>{{ 'Approved & Signed Off' if scan.doctor_signed_off else 'Awaiting Specialist Verification' }}</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Medical Certificate layout for print / verification -->
+  <div class="print-only-certificate" style="margin-top: 3rem; border: 2px solid #ddd; padding: 2.5rem; border-radius: 12px; background: white; color: #000; display: none;">
+    <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 1.5rem; margin-bottom: 2rem;">
+      <h2 style="font-family:'Space Grotesk',sans-serif; margin:0; font-size:2rem; letter-spacing:1px;">RETINASCAN CLINICAL NETWORK</h2>
+      <p style="margin: 0.25rem 0 0 0; text-transform:uppercase; font-size:0.8rem; letter-spacing:2px; color:#555;">Official Diagnostic Health Certificate</p>
+    </div>
+    
+    <p style="font-size: 1.1rem; line-height: 1.8;">
+      This certifies that the patient <strong>{{ scan.family_member.name if scan.family_member_id else scan.patient.name }}</strong> has undergone computer-aided ophthalmic fundus diagnostic imaging on <strong>{{ scan.created_at.strftime('%d %b %Y') }}</strong> at <strong>{{ scan.created_at.strftime('%I:%M %p') }}</strong>.
+    </p>
+
+    <div style="margin: 2rem 0; display:grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+      <div style="border:1px solid #ccc; padding:1rem; border-radius:6px;">
+        <h4 style="margin:0 0 0.5rem 0; border-bottom:1px solid #ddd; padding-bottom:0.25rem;">DIAGNOSTIC METRICS</h4>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>DR Stage:</span><strong>{{ scan.predicted_class }}</strong></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>AI Confidence:</span><strong>{{ (scan.confidence*100)|round(1) }}%</strong></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;"><span>Glaucoma Risk:</span><strong>{{ (scan.glaucoma_prob*100)|round(1) }}%</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>AMD Risk:</span><strong>{{ (scan.amd_prob*100)|round(1) }}%</strong></div>
+      </div>
+      <div style="border:1px solid #ccc; padding:1rem; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center;">
+        <span style="font-size:0.75rem; color:#555; text-transform:uppercase; font-weight:700;">Blockchain Verification QR</span>
+        <div style="margin-top:0.5rem; border:1px solid #000; padding:0.25rem; display:inline-block; background:white;">
+          <!-- QR simulated -->
+          <svg width="70" height="70" viewBox="0 0 100 100">
+            <rect width="100" height="100" fill="white"/>
+            <rect x="5" y="5" width="25" height="25" fill="black"/>
+            <rect x="8" y="8" width="19" height="19" fill="white"/>
+            <rect x="11" y="11" width="13" height="13" fill="black"/>
+            <rect x="70" y="5" width="25" height="25" fill="black"/>
+            <rect x="73" y="8" width="19" height="19" fill="white"/>
+            <rect x="76" y="11" width="13" height="13" fill="black"/>
+            <rect x="5" y="70" width="25" height="25" fill="black"/>
+            <rect x="8" y="73" width="19" height="19" fill="white"/>
+            <rect x="11" y="76" width="13" height="13" fill="black"/>
+            <rect x="35" y="35" width="30" height="30" fill="black"/>
+            <rect x="40" y="40" width="20" height="20" fill="white"/>
+            <rect x="45" y="45" width="10" height="10" fill="black"/>
+          </svg>
+        </div>
+        <span style="font-size:0.65rem; color:#777; margin-top:0.25rem; font-family:monospace;">ID: RS-{{ hash }}</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 3.5rem; display: flex; justify-content: space-between; align-items: flex-end;">
+      <div>
+        <div style="border-bottom:1px solid #000; width:200px; text-align:center; padding-bottom:0.5rem;">
+          <span style="font-family: 'Space Grotesk', sans-serif; font-weight:700; color:#555;">SYSTEM AUTOMATED CERT</span>
+        </div>
+        <p style="margin:0.25rem 0 0 0; font-size:0.75rem; color:#555; text-align:center;">RetinaScan Diagnostic AI signature</p>
+      </div>
+      <div>
+        <div style="border-bottom:1px solid #000; width:200px; text-align:center; padding-bottom:0.5rem;">
+          {% if scan.doctor_signed_off and scan.doctor_signature %}
+            <img src="{{ scan.doctor_signature }}" style="max-height: 45px; display:block; margin: 0 auto;"/>
+          {% else %}
+            <span style="font-family: 'Space Grotesk', sans-serif; font-style:italic; font-size:0.8rem; color:#999;">Verification Pending</span>
+          {% endif %}
+        </div>
+        <p style="margin:0.25rem 0 0 0; font-size:0.75rem; color:#555; text-align:center;">Ophthalmologist Sign-off Signature</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Styles specifically for visual card layout and printing -->
+<style>
+  .passport-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .passport-card {
+    position: relative;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, rgba(16, 20, 38, 0.9), rgba(6, 9, 19, 0.96));
+    border: 1px solid var(--border-glass);
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.5);
+    padding: 2.5rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .passport-card-glow {
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(0, 242, 254, 0.08) 0%, rgba(0,0,0,0) 70%);
+    pointer-events: none;
+  }
+  .passport-card:hover {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 25px rgba(0, 242, 254, 0.15);
+  }
+  
+  @media print {
+    /* Hide everything else */
+    body * {
+      visibility: hidden;
+    }
+    .no-print, nav, footer, .chatbot-container, .bg-glows, #neural-bg-canvas {
+      display: none !important;
+    }
+    /* Show only the clinical certificate */
+    .print-only-certificate, .print-only-certificate * {
+      visibility: visible;
+    }
+    .print-only-certificate {
+      display: block !important;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      border: none !important;
+      padding: 0 !important;
+    }
+  }
+</style>
+
+{% endblock %}

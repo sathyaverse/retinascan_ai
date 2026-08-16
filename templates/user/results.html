@@ -1,0 +1,536 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('results_title') }} — RetinaScan AI{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-square-poll-vertical" style="color:var(--neon-cyan);"></i> {{ t('results_title') }}</h1>
+  <p>Real-time machine learning predictions, explainability maps, and hospital sync telemetry</p>
+  <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+    <a href="{{ url_for('history') }}" class="btn btn-outline"><i class="fa-solid fa-clock-rotate-left"></i> {{ t('history') }}</a>
+    <a href="{{ url_for('upload') }}" class="btn btn-primary"><i class="fa-solid fa-arrow-left"></i> {{ t('new_scan') }}</a>
+  </div>
+</div>
+
+<!-- Telemedicine Consultation Referral Banner -->
+{% if not scan.is_normal %}
+<div class="card telemed-banner" style="margin-bottom: 2rem;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
+    <div style="flex: 1; min-width: 280px;">
+      <h3 style="color: white; font-size: 1.2rem; margin-bottom: 0.35rem; display:flex; align-items:center; gap:0.5rem;">
+        <i class="fa-solid fa-user-doctor" style="color:var(--neon-cyan);"></i> {{ t('telemed_banner') }}
+      </h3>
+      <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0;">Our on-call retina specialists can review your Grad-CAM heatmaps and diagnostic metrics immediately.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('telemedicine', scan_id=scan.id) }}" class="btn btn-primary" style="white-space: nowrap;">
+        <i class="fa-solid fa-video"></i> {{ t('connect_doctor') }}
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="results-grid">
+
+  <!-- Multi-Disease Risk Dashboard Card -->
+  <div class="card diagnosis-card {% if scan.is_normal %}severity-green{% else %}severity-red{% endif %}">
+    <h2>Analysis Summary</h2>
+    <p class="description" style="margin-bottom: 2rem;">
+      {% if scan.is_normal %}
+        <span style="color:var(--neon-green); font-weight:600;"><i class="fa-solid fa-circle-check"></i> {{ t('normal_description') }}</span>
+      {% else %}
+        <span style="color:var(--neon-pink); font-weight:600;"><i class="fa-solid fa-triangle-exclamation"></i> Retinal anomalies detected. Diagnostic parameters outline specific risk profiles below.</span>
+      {% endif %}
+    </p>
+
+    <!-- Confidence score gauge — circular meter showing prediction certainty -->
+    <div style="display:flex; justify-content:center; margin-bottom:1.5rem; margin-top:0.5rem;">
+      <div style="position:relative; width:140px; height:140px;">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="10"></circle>
+          <circle cx="70" cy="70" r="58" fill="none" stroke="url(#gaugeGrad)" stroke-width="10"
+                  stroke-dasharray="364" stroke-dashoffset="{{ 364 - (364 * scan.confidence)|round|int if scan.confidence else 364 }}"
+                  stroke-linecap="round" style="transition: stroke-dashoffset 1s ease-in-out; transform: rotate(-90deg); transform-origin: 50% 50%;"></circle>
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--neon-cyan)"></stop>
+              <stop offset="100%" stop-color="var(--neon-purple)"></stop>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+          <span style="font-family:'Orbitron',sans-serif; font-size:1.6rem; font-weight:800; color:white; text-shadow:0 0 10px rgba(0,240,255,0.4);">{{ (scan.confidence*100)|round|int if scan.confidence else '0' }}%</span>
+          <br/>
+          <span style="font-size:0.65rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Certainty</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Diabetic Retinopathy Risk -->
+    <div style="margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.4rem;">
+        <span style="font-weight: 600; color:white;">{{ t('dr') }}</span>
+        <span class="badge {% if scan.is_dr %}badge-severe-dr{% else %}badge-no-dr{% endif %}">
+          {{ scan.predicted_class if scan.predicted_class else '0%' }} ({{ (scan.dr_prob * 100)|round(1) }}%)
+        </span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" style="width: {{ (scan.dr_prob * 100)|round(1) }}%; background: linear-gradient(90deg, var(--neon-cyan), {% if scan.is_dr %}var(--neon-pink){% else %}var(--neon-green){% endif %});"></div>
+      </div>
+    </div>
+
+    <!-- Glaucoma Risk -->
+    <div style="margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.4rem;">
+        <span style="font-weight: 600; color:white;">{{ t('glaucoma') }}</span>
+        <span class="badge {% if scan.is_glaucoma %}badge-severe-dr{% else %}badge-no-dr{% endif %}">
+          {% if scan.is_glaucoma %}High Risk{% else %}Low Risk{% endif %} ({{ (scan.glaucoma_prob * 100)|round(1) }}%)
+        </span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" style="width: {{ (scan.glaucoma_prob * 100)|round(1) }}%; background: linear-gradient(90deg, var(--neon-cyan), {% if scan.is_glaucoma %}var(--neon-pink){% else %}var(--neon-green){% endif %});"></div>
+      </div>
+    </div>
+
+    <!-- AMD Risk -->
+    <div style="margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.4rem;">
+        <span style="font-weight: 600; color:white;">{{ t('amd') }}</span>
+        <span class="badge {% if scan.is_amd %}badge-severe-dr{% else %}badge-no-dr{% endif %}">
+          {% if scan.is_amd %}High Risk{% else %}Low Risk{% endif %} ({{ (scan.amd_prob * 100)|round(1) }}%)
+        </span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" style="width: {{ (scan.amd_prob * 100)|round(1) }}%; background: linear-gradient(90deg, var(--neon-cyan), {% if scan.is_amd %}var(--neon-pink){% else %}var(--neon-green){% endif %});"></div>
+      </div>
+    </div>
+
+    <!-- Cataracts Risk -->
+    <div style="margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.4rem;">
+        <span style="font-weight: 600; color:white;">Cataract</span>
+        <span class="badge {% if scan.is_cataract %}badge-severe-dr{% else %}badge-no-dr{% endif %}">
+          {% if scan.is_cataract %}High Risk{% else %}Low Risk{% endif %} ({{ (scan.cataract_prob * 100)|round(1) }}%)
+        </span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" style="width: {{ (scan.cataract_prob * 100)|round(1) }}%; background: linear-gradient(90deg, var(--neon-cyan), {% if scan.is_cataract %}var(--neon-pink){% else %}var(--neon-green){% endif %});"></div>
+      </div>
+    </div>
+
+    <!-- Healthy / Normal Retina -->
+    <div style="margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.4rem;">
+        <span style="font-weight: 600; color:white;">{{ t('normal') }}</span>
+        <span class="badge {% if scan.is_normal %}badge-no-dr{% else %}badge-pending{% endif %}">
+          {{ (scan.normal_prob * 100)|round(1) }}%
+        </span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" style="width: {{ (scan.normal_prob * 100)|round(1) }}%; background: linear-gradient(90deg, var(--neon-cyan), {% if scan.is_normal %}var(--neon-green){% else %}var(--text-secondary){% endif %});"></div>
+      </div>
+    </div>
+
+    <div class="result-meta">
+      <span><i class="fa-solid fa-circle-info"></i> {{ t('eye') }}: <strong>{{ t('left_eye') if scan.eye_side == 'Left' else (t('right_eye') if scan.eye_side == 'Right' else scan.eye_side) }}</strong></span>
+      <span><i class="fa-solid fa-calendar"></i> Date: <strong>{{ scan.created_at.strftime('%d %b %Y') }}</strong></span>
+      <span><i class="fa-solid fa-circle-check"></i> Status: <strong style="color:var(--neon-cyan);">{{ scan.status.upper() }}</strong></span>
+      {% if scan.dicom_patient_id %}
+      <span><i class="fa-solid fa-address-card"></i> DICOM ID: <strong>{{ scan.dicom_patient_id }}</strong></span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Interactive Visualizer (Split Screen / Slider) -->
+  <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:1rem; gap:0.5rem;">
+      <h3 style="margin:0;"><i class="fa-solid fa-object-group" style="color:var(--neon-cyan);"></i> Dual-Mode Image Visualizer</h3>
+      <label style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8rem; color:white; cursor:pointer; user-select:none;">
+        <input type="checkbox" onchange="toggleLesionMarkers(this.checked)" style="accent-color:var(--neon-pink); cursor:pointer;"/> <i class="fa-solid fa-location-dot" style="color:var(--neon-pink);"></i> Overlay Lesion Markers
+      </label>
+    </div>
+    <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:1rem;">Slide left/right to compare raw fundus photography with the Grad-CAM activation heatmap.</p>
+
+    <!-- Comparison Slider -->
+    <div class="comparison-slider-container" id="sliderContainer">
+      <!-- Original Fundus Image (Background) -->
+      {% if scan.original_image.endswith('.pdf') %}
+      <img class="slider-img" src="{{ url_for('static', filename='uploads/pdf_placeholder.svg') }}" alt="Original"/>
+      {% else %}
+      <img class="slider-img" src="{{ url_for('static', filename='uploads/' + scan.original_image) }}" alt="Original"/>
+      {% endif %}
+      
+      <!-- Grad-CAM Image (Foreground Overlay) -->
+      {% if scan.gradcam_image %}
+      <div class="slider-img-overlay" id="sliderOverlay" style="width: 50%;">
+        {% if scan.gradcam_image.endswith('.svg') %}
+        <img src="{{ url_for('static', filename='uploads/' + scan.gradcam_image) }}" alt="Grad-CAM" style="width: 100%; height: 100%; object-fit: contain; max-width: none;"/>
+        {% else %}
+        <img src="{{ url_for('static', filename='uploads/' + scan.gradcam_image) }}" alt="Grad-CAM" style="width: 100%; height: 100%; object-fit: cover; max-width: none;"/>
+        {% endif %}
+      </div>
+      {% endif %}
+      
+      <!-- Sliding Divider Handle -->
+      <div class="slider-handle" id="sliderHandle" style="left: 50%;">
+        <div class="slider-handle-button"><i class="fa-solid fa-arrows-left-right"></i></div>
+      </div>
+    </div>
+
+    {% if scan.original_image.endswith('.pdf') %}
+    <div style="margin-top: 1.2rem; text-align: center;">
+      <a href="{{ url_for('static', filename='uploads/' + scan.original_image) }}" target="_blank" class="btn btn-outline" style="border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(0, 242, 254, 0.1); cursor: pointer; transition: all 0.2s ease;">
+        <i class="fa-solid fa-file-pdf" style="font-size:1.1rem; color:red;"></i> View / Download Original Clinical PDF Report
+      </a>
+    </div>
+    {% endif %}
+
+      <!-- Lesion markers (absolute positioned dots, hidden by default) -->
+      {% if scan.microaneurysms %}
+      <div class="lesion-marker" style="display:none; position:absolute; top:35%; left:40%; width:14px; height:14px; background:var(--neon-pink); border-radius:50%; box-shadow:0 0 10px var(--neon-pink); z-index:8;" title="Microaneurysm: Small red spot representing capillary bulge"></div>
+      {% endif %}
+      {% if scan.hemorrhages %}
+      <div class="lesion-marker" style="display:none; position:absolute; top:65%; left:30%; width:16px; height:16px; background:var(--neon-orange); border-radius:50%; box-shadow:0 0 10px var(--neon-orange); z-index:8;" title="Hemorrhage: Bleeding lesion from damaged vessel"></div>
+      {% endif %}
+      {% if scan.hard_exudates %}
+      <div class="lesion-marker" style="display:none; position:absolute; top:45%; left:60%; width:15px; height:15px; background:var(--neon-yellow); border-radius:50%; box-shadow:0 0 10px var(--neon-yellow); z-index:8;" title="Hard Exudate: Lipids/proteins leakage showing as bright spots"></div>
+      {% endif %}
+      {% if scan.soft_exudates %}
+      <div class="lesion-marker" style="display:none; position:absolute; top:52%; left:50%; width:16px; height:16px; background:white; border-radius:50%; box-shadow:0 0 10px white; z-index:8;" title="Soft Exudate: Cotton wool spot showing capillary occlusion"></div>
+      {% endif %}
+      {% if scan.neovascularization %}
+      <div class="lesion-marker" style="display:none; position:absolute; top:30%; left:55%; width:15px; height:15px; background:var(--neon-purple); border-radius:50%; box-shadow:0 0 10px var(--neon-purple); z-index:8;" title="Neovascularization: Proliferation of abnormal fragile new vessels"></div>
+      {% endif %}
+
+      <span class="image-label-tag tag-left">Raw Examination</span>
+      <span class="image-label-tag tag-right" style="color: var(--neon-pink);">Grad-CAM Hotspot</span>
+    </div>
+  </div>
+
+  <!-- Patient Health Advisory -->
+  <div class="card">
+    <h3><i class="fa-solid fa-file-medical" style="color:var(--neon-green);"></i> Clinical Health Advisory</h3>
+    
+    <div style="margin-bottom: 1.25rem;">
+      <h4 style="color: var(--neon-cyan); font-size: 0.95rem; margin-bottom: 0.4rem; font-weight: 600;"><i class="fa-solid fa-user-doctor"></i> {{ t('medical_recommendation') }}</h4>
+      <p style="font-size: 0.88rem; margin: 0; line-height: 1.6; color:var(--text-secondary);">{{ scan.medical_recommendation or 'Maintain standard medical ophthalmologist screening.' }}</p>
+    </div>
+
+    <div style="margin-bottom: 1.25rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+      <h4 style="color: var(--neon-green); font-size: 0.95rem; margin-bottom: 0.4rem; font-weight: 600;"><i class="fa-solid fa-apple-whole"></i> {{ t('nutritional_advice') }}</h4>
+      <p style="font-size: 0.88rem; margin: 0; line-height: 1.6; color:var(--text-secondary);">{{ scan.nutritional_advice or 'Keep a balanced glycemic index diet rich in vitamins and antioxidants.' }}</p>
+    </div>
+
+    <div style="border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+      <h4 style="color: var(--neon-orange); font-size: 0.95rem; margin-bottom: 0.4rem; font-weight: 600;"><i class="fa-solid fa-eye-dropper"></i> {{ t('eye_health_tips') }}</h4>
+      <p style="font-size: 0.88rem; margin: 0; line-height: 1.6; color:var(--text-secondary);">{{ scan.eye_health_tips or 'Limit blue-light exposure, monitor intraocular pressure, and wear protective lenses.' }}</p>
+    </div>
+  </div>
+
+  <!-- Detected Clinical Markers -->
+  <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+    <div>
+      <h3><i class="fa-solid fa-circle-nodes" style="color:var(--neon-pink);"></i> {{ t('clinical_markers') }}</h3>
+      <ul class="marker-list">
+        <li class="{{ 'detected' if scan.microaneurysms else 'absent' }}">
+          <span><i class="fa-solid fa-circle-dot"></i> {{ t('micro') }}</span>
+        </li>
+        <li class="{{ 'detected' if scan.hemorrhages else 'absent' }}">
+          <span><i class="fa-solid fa-droplet"></i> {{ t('hemo') }}</span>
+        </li>
+        <li class="{{ 'detected' if scan.hard_exudates else 'absent' }}">
+          <span><i class="fa-solid fa-snowflake"></i> {{ t('hard_ex') }}</span>
+        </li>
+        <li class="{{ 'detected' if scan.soft_exudates else 'absent' }}">
+          <span><i class="fa-solid fa-cloud"></i> {{ t('soft_ex') }}</span>
+        </li>
+        <li class="{{ 'detected' if scan.neovascularization else 'absent' }}">
+          <span><i class="fa-solid fa-bezier-curve"></i> {{ t('neovac') }}</span>
+        </li>
+      </ul>
+    </div>
+    
+    <div style="margin-top: 2rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <a href="{{ url_for('download_report', scan_id=scan.id) }}" class="btn btn-primary">
+        <i class="fa-solid fa-file-pdf"></i> {{ t('download_pdf') }}
+      </a>
+      <a href="{{ url_for('passport', scan_id=scan.id) }}" class="btn btn-outline" style="border-color: var(--neon-cyan); color: var(--neon-cyan);">
+        <i class="fa-solid fa-address-card"></i> Digital Passport
+      </a>
+      <a href="{{ url_for('second_opinion', scan_id=scan.id) }}" class="btn btn-outline" style="border-color: var(--neon-pink); color: var(--neon-pink);">
+        <i class="fa-solid fa-code-compare"></i> AI Second Opinion
+      </a>
+      <button onclick="document.getElementById('share-modal').style.display='block';" class="btn btn-outline">
+        <i class="fa-solid fa-share-nodes"></i> {{ t('share_report') }}
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Share / Dispatch Report Modal/Card -->
+  <div id="share-modal" class="card" style="grid-column: span 2; display: none; background: rgba(13,20,44,0.95); border: 1px solid var(--neon-cyan); box-shadow: var(--shadow-neon-cyan); border-radius: var(--radius-lg); padding: 2rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem;">
+      <h3 style="margin:0; font-family:'Orbitron',sans-serif; color:white; display:flex; align-items:center; gap:0.5rem;"><i class="fa-solid fa-paper-plane" style="color:var(--neon-cyan);"></i> {{ t('share_report') }}</h3>
+      <button onclick="document.getElementById('share-modal').style.display='none';" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:var(--text-secondary); line-height:1; transition:color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-secondary)'">&times;</button>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
+      <!-- Email / SMS section -->
+      <div>
+        <h4 style="color: var(--neon-cyan); margin: 0 0 1rem 0; font-family: 'Space Grotesk', sans-serif;"><i class="fa-solid fa-envelope-open-text"></i> Send via Email or SMS</h4>
+        <form action="{{ url_for('send_report', scan_id=scan.id) }}" method="POST">
+          <div class="form-row" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 250px;">
+              <label style="display:block; margin-bottom:0.5rem; font-size:0.85rem; color:var(--text-secondary);"><i class="fa-regular fa-envelope"></i> {{ t('enter_email') }}</label>
+              <input type="email" name="email" placeholder="example@mail.com" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 6px; color: white; outline: none;"/>
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 250px;">
+              <label style="display:block; margin-bottom:0.5rem; font-size:0.85rem; color:var(--text-secondary);"><i class="fa-solid fa-mobile-screen-button"></i> {{ t('enter_phone') }}</label>
+              <input type="text" name="phone" placeholder="+919876543210" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 6px; color: white; outline: none;"/>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="margin-top: 1.25rem;"><i class="fa-solid fa-square-share-nodes"></i> Dispatch via Portal</button>
+        </form>
+      </div>
+      
+      <!-- Divider -->
+      <div style="border-top: 1px solid var(--border-glass); padding-top: 1.5rem;">
+        <h4 style="color: #25d366; margin: 0 0 1rem 0; font-family: 'Space Grotesk', sans-serif;"><i class="fa-brands fa-whatsapp"></i> Send via WhatsApp</h4>
+        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-end;">
+          <div style="flex: 1; min-width: 250px;">
+            <label style="display:block; margin-bottom:0.5rem; font-size:0.85rem; color:var(--text-secondary);">WhatsApp Phone Number</label>
+            <input type="text" id="wa-phone-input" placeholder="Country code + number (e.g. 919876543210)" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); border-radius: 6px; color: white; outline: none;" oninput="updateWhatsAppLink()"/>
+          </div>
+          <div style="min-width: 180px;">
+            <a id="whatsapp-share-btn" href="#" target="_blank" class="btn" style="background:#25d366; color:white !important; display:inline-flex; align-items:center; gap:0.5rem; justify-content:center; text-decoration:none; padding: 0.75rem 1.5rem; width:100%; box-sizing:border-box; border-radius: 6px; cursor: not-allowed; opacity: 0.6; pointer-events: none;" onclick="logWhatsAppShare(event)">
+              <i class="fa-brands fa-whatsapp"></i> Share on WhatsApp
+            </a>
+          </div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.5rem 0 0 0;">Note: Clinically generated PDF reports are automatically attached to emails. WhatsApp sharing transmits a secure markdown diagnostic card with results link.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Second Opinion Mode Comparison Card -->
+  <div class="card" style="grid-column: span 2; border-top: 3px solid var(--neon-pink); background: rgba(255,0,122,0.02);">
+    <h3><i class="fa-solid fa-code-compare" style="color:var(--neon-pink);"></i> CNN Multi-Model Validation (Second Opinion Mode)</h3>
+    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem;">Comparing predictions between the Primary Classifier (EfficientNetV2-B0) and the Secondary Validator (ResNet50V2).</p>
+    
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; text-align:center;">
+      <!-- Model 1 -->
+      <div style="background:rgba(255,255,255,0.01); border:1px solid var(--border-glass); padding:1.5rem; border-radius:var(--radius-lg);">
+        <span style="font-size:0.8rem; color:var(--neon-cyan); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Primary Classifier Model</span>
+        <h4 style="margin: 0.5rem 0 1rem 0; font-family:'Space Grotesk',sans-serif; font-size:1.15rem; color:white;">EfficientNetV2-B0</h4>
+        <div class="badge {% if scan.is_dr %}badge-severe-dr{% else %}badge-no-dr{% endif %}" style="font-size:0.95rem; padding:0.4rem 1rem;">
+          {{ scan.predicted_class }}
+        </div>
+        <div style="font-size:2.2rem; font-family:'Orbitron',sans-serif; font-weight:800; color:white; margin-top:0.75rem; text-shadow:0 0 10px rgba(0,240,255,0.3);">
+          {{ (scan.confidence*100)|round(1) }}% <span style="font-size:0.9rem; color:var(--text-secondary); font-weight:400;">conf.</span>
+        </div>
+      </div>
+      
+      <!-- Model 2 -->
+      <div style="background:rgba(255,255,255,0.01); border:1px solid var(--border-glass); padding:1.5rem; border-radius:var(--radius-lg);">
+        <span style="font-size:0.8rem; color:var(--neon-pink); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Secondary Validator Model</span>
+        <h4 style="margin: 0.5rem 0 1rem 0; font-family:'Space Grotesk',sans-serif; font-size:1.15rem; color:white;">{{ scan.second_opinion_model or 'ResNet50V2' }}</h4>
+        <div class="badge badge-pending" style="font-size:0.95rem; padding:0.4rem 1rem; border-color:var(--neon-pink); color:var(--neon-pink); background:rgba(255,0,122,0.05);">
+          {{ scan.second_opinion_class or 'N/A' }}
+        </div>
+        <div style="font-size:2.2rem; font-family:'Orbitron',sans-serif; font-weight:800; color:white; margin-top:0.75rem; text-shadow:0 0 10px rgba(255,0,122,0.3);">
+          {{ (scan.second_opinion_confidence*100)|round(1) if scan.second_opinion_confidence else 'N/A' }}% <span style="font-size:0.9rem; color:var(--text-secondary); font-weight:400;">conf.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIS Navigation / Console Card -->
+  <div class="card" style="grid-column: span 2; border-top: 3px solid var(--neon-purple); background: rgba(6,9,19,0.7);">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+      <h3 style="margin: 0; font-family:'Orbitron',sans-serif; letter-spacing:0.5px;"><i class="fa-solid fa-hospital" style="color:var(--neon-purple);"></i> {{ t('his_sync_console') }}</h3>
+      {% if scan.his_sync_status == 'synced' %}
+        <span class="status-pill status-processed">HL7 FHIR SYNCED ✓</span>
+      {% else %}
+        <span class="status-pill status-pending">HIS LINK PENDING</span>
+      {% endif %}
+    </div>
+    
+    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+      Visualizing clinical transaction packets transmitted in HL7 v2.5.1 and HL7 FHIR formats to EHR integrations.
+    </p>
+
+    <details style="cursor: pointer; background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 1rem;">
+      <summary style="font-size: 0.9rem; font-weight: 600; color: var(--neon-purple); font-family:'Space Grotesk',sans-serif; outline:none;">
+        <i class="fa-solid fa-code"></i> Inspect EHR Transmit Protocols (HL7 ORU^R01 & FHIR JSON)
+      </summary>
+      
+      <div style="margin-top: 1.25rem;">
+        <h4 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.5rem; color:white; font-family:'Space Grotesk',sans-serif;">HL7 v2.5.1 Message (Segment Frames)</h4>
+        <pre style="background: #03050c; color: #a5b4fc; padding: 1.25rem; border-radius: 8px; font-size: 0.8rem; overflow-x: auto; font-family: monospace; line-height: 1.5; border: 1px solid var(--border-glass);">
+MSH|^~\&|RETINASCAN_AI|AI_PORTAL|HIS_RECEIVER|CLINIC_DB|20260623085200||ORU^R01^ORU_R01|MSG{{ "%06d"|format(scan.id) }}|P|2.5.1
+PID|1||pat-{{ "%04d"|format(current_user.id) }}||{{ current_user.name.replace(' ', '^') }}||{% if current_user.age %}{{ 2026 - current_user.age }}{% else %}1985{% endif %}0101|{{ current_user.gender[0] if current_user.gender else 'U' }}|||{{ current_user.phone or '' }}
+OBR|1||RS-ORDER-{{ "%05d"|format(scan.id) }}|86807-5^Diabetic Retinopathy Screening Report^LN|||20260623085200|||||||||||||||||F
+OBX|1|ST|DR_STAGE^Diabetic Retinopathy Stage^LN||{{ scan.predicted_class }}|||N|||F|||20260623085200
+OBX|2|NM|DR_PROB^Diabetic Retinopathy Prob^LN||{{ scan.dr_prob|round(4) }}|%|||N|||F|||20260623085200
+OBX|3|NM|GLAUCOMA_PROB^Glaucoma Prob^LN||{{ scan.glaucoma_prob|round(4) }}|%|||N|||F|||20260623085200
+OBX|4|NM|AMD_PROB^AMD Prob^LN||{{ scan.amd_prob|round(4) }}|%|||N|||F|||20260623085200
+OBX|5|TX|CLINICAL_MARKERS^Clinical Markers^LN||MA={% if scan.microaneurysms %}1{% else %}0{% endif %};HE={% if scan.hemorrhages %}1{% else %}0{% endif %};HE_EX={% if scan.hard_exudates %}1{% else %}0{% endif %};SO_EX={% if scan.soft_exudates %}1{% else %}0{% endif %};NV={% if scan.neovascularization %}1{% else %}0{% endif %}||||||F
+        </pre>
+      </div>
+
+      <div style="margin-top: 1.25rem; border-top: 1px solid var(--border-glass); padding-top: 1.25rem;">
+        <h4 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.5rem; color:white; font-family:'Space Grotesk',sans-serif;">HL7 FHIR DiagnosticReport Resource (JSON Payload)</h4>
+        <pre id="fhir-json-block" style="background: #03050c; color: #93c5fd; padding: 1.25rem; border-radius: 8px; font-size: 0.8rem; overflow-x: auto; font-family: monospace; line-height: 1.5; border: 1px solid var(--border-glass);">{
+  "resourceType": "DiagnosticReport",
+  "id": "{{ scan.his_fhir_id or 'diag-rep-pending' }}",
+  "status": "final",
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "86807-5",
+        "display": "Diabetic Retinopathy Screening Report"
+      }
+    ],
+    "text": "Retinal Scan AI Automated Screening"
+  },
+  "subject": {
+    "reference": "Patient/pat-{{ "%04d"|format(current_user.id) }}",
+    "display": "{{ current_user.name }}"
+  },
+  "effectiveDateTime": "{{ scan.created_at.isoformat() }}Z",
+  "conclusion": "AI screening: {{ scan.predicted_class }} (DR: {{ (scan.dr_prob*100)|round(1) }}%, Glaucoma: {{ (scan.glaucoma_prob*100)|round(1) }}%, AMD: {{ (scan.amd_prob*100)|round(1) }}%)",
+  "conclusionCode": [
+    {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "428341000124108",
+          "display": "Diabetic Retinopathy stage - {{ scan.predicted_class }}"
+        }
+      ]
+    }
+  ]
+}</pre>
+      </div>
+    </details>
+  <!-- Impairment simulator removed -->
+
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script>
+// --- Toggle Lesion Markers ---
+function toggleLesionMarkers(checked) {
+  document.querySelectorAll('.lesion-marker').forEach(el => {
+    el.style.display = checked ? 'block' : 'none';
+  });
+}
+
+// --- Grad-CAM Comparison Slider Logic ---
+const container = document.getElementById('sliderContainer');
+const overlay = document.getElementById('sliderOverlay');
+const handle = document.getElementById('sliderHandle');
+
+if (container && overlay && handle) {
+  let active = false;
+  
+  const moveSlider = (clientX) => {
+    const rect = container.getBoundingClientRect();
+    let x = clientX - rect.left;
+    if (x < 0) x = 0;
+    if (x > rect.width) x = rect.width;
+    const percentage = (x / rect.width) * 100;
+    overlay.style.width = percentage + '%';
+    handle.style.left = percentage + '%';
+  };
+
+  const startDragging = (e) => {
+    active = true;
+    e.preventDefault();
+  };
+
+  const stopDragging = () => {
+    active = false;
+  };
+
+  handle.addEventListener('mousedown', startDragging);
+  handle.addEventListener('touchstart', startDragging, { passive: true });
+
+  window.addEventListener('mouseup', stopDragging);
+  window.addEventListener('touchend', stopDragging);
+
+  window.addEventListener('mousemove', (e) => {
+    if (!active) return;
+    moveSlider(e.clientX);
+  });
+
+  window.addEventListener('touchmove', (e) => {
+    if (!active) return;
+    moveSlider(e.touches[0].clientX);
+  });
+}
+
+// --- WhatsApp Custom Link Generator & Logger ---
+function updateWhatsAppLink() {
+  const input = document.getElementById('wa-phone-input');
+  const btn = document.getElementById('whatsapp-share-btn');
+  if (!input || !btn) return;
+  
+  const val = input.value.trim();
+  const cleanedNum = val.replace(/\D/g, '');
+  
+  if (cleanedNum.length >= 7) {
+    const msg = "👁️ *RetinaScan AI Ophthalmic Report* 👁️\n\n" +
+                "*Patient Name*: {{ scan.patient.name }}\n" +
+                "*DR Diagnosis*: {{ scan.predicted_class or 'Unknown' }}\n" +
+                "*AI Confidence*: {{ ((scan.confidence or 0)*100)|round(1) }}%\n" +
+                "*View Portal Link*: {{ url_for('results', scan_id=scan.id, _external=True) }}\n\n" +
+                "_This automated screening report was generated securely via RetinaScan AI. Please consult your specialist._";
+    const encodedMsg = encodeURIComponent(msg);
+    btn.href = 'https://wa.me/' + cleanedNum + '?text=' + encodedMsg;
+    btn.style.cursor = 'pointer';
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+  } else {
+    btn.href = '#';
+    btn.style.cursor = 'not-allowed';
+    btn.style.opacity = '0.6';
+    btn.style.pointerEvents = 'none';
+  }
+}
+
+function logWhatsAppShare(event) {
+  const input = document.getElementById('wa-phone-input');
+  const val = input ? input.value.trim() : "";
+  if (!val) {
+    event.preventDefault();
+    return;
+  }
+  
+  // Call background API to log this in HIPAA audit logs
+  fetch('{{ url_for("api_log_whatsapp_share", scan_id=scan.id) }}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ phone: val })
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("WhatsApp share logged in audit logs:", data);
+  })
+  .catch(err => {
+    console.error("Error logging WhatsApp share:", err);
+  });
+  
+  // Hide the modal after click
+  setTimeout(() => {
+    document.getElementById('share-modal').style.display = 'none';
+  }, 500);
+}
+
+// --- Simulator logic removed ---
+</script>
+{% endblock %}
