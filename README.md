@@ -83,11 +83,6 @@ models/dr_model.h5
 ```bash
 python app.py
 ```
-Visit: http://localhost:5000
-
-**Default admin credentials:**
-- Email: admin@retinascan.com
-- Password: Admin@1234
 
 ## DR Severity Classes
 | Stage | Description |
